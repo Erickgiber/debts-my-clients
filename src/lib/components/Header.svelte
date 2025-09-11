@@ -5,7 +5,7 @@
 <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-zinc-200">
   <div class="mx-auto max-w-lg px-4 py-3 flex items-center gap-3">
     <div class="flex-1">
-      <h1 class="text-lg font-semibold tracking-tight">Deudas & Ventas</h1>
+      <h1 class="text-lg font-semibold tracking-tight">Gestor de ventas</h1>
   <p class="text-xs text-zinc-500">{totalLabel}: <span class="font-medium">{totalPending}</span></p>
     </div>
     <button
