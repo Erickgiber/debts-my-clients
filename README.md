@@ -1,3 +1,32 @@
+## Android (Capacitor) build
+
+Requisitos previos:
+- Android Studio + SDK Platform 33+ (o la que Gradle pida)
+- Java 17 (JDK 17)
+
+Pasos rápidos:
+1. `npm run build`
+2. `npm run android:build`
+	 - Genera `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+3. Firma el APK para evitar advertencias al instalar:
+	 - Crea un keystore si no tienes uno:
+		 ```powershell
+		 keytool -genkeypair -v -keystore yut.keystore -alias yut -keyalg RSA -keysize 2048 -validity 3650
+		 ```
+	 - Firma y alinea el APK:
+		 ```powershell
+		 # Firma (apksigner viene con el SDK de Android)
+		 $env:PATH+=";${env:ANDROID_HOME}\build-tools\<version>"; apksigner sign --ks yut.keystore android\app\build\outputs\apk\release\app-release-unsigned.apk
+		 # Verifica la firma
+		 apksigner verify android\app\build\outputs\apk\release\app-release-unsigned.apk
+		 ```
+	 - Alternativa: usa Android Studio > Build > Generate Signed Bundle/APK.
+
+Notas para reducir “APK extraño”:
+- ID de app en formato Java sin guiones (por eso `com.salesgestor.ap`).
+- Tráfico claro deshabilitado (networkSecurityConfig) y `androidScheme` en https.
+- Firma de lanzamiento con keystore propio.
+
 # Deudas & Ventas
 
 App para gestionar deudas y ventas de clientes. Actualizada a Svelte 5 (runes).

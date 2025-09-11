@@ -1,5 +1,5 @@
 {
-  "name": "yutdelys-app",
+  "name": "sales-gestor-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,9 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+  "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+  "cap:sync": "npx cap sync",
+  "android:open": "npx cap open android",
+  "android:copy": "npx cap copy android",
+  "android:build": "npm run build && npx cap copy android && cd android && gradlew.bat assembleRelease"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "@sveltejs/vite-plugin-svelte": "^6.1.1",
     "@tsconfig/svelte": "^5.0.4",
     "svelte": "^5.38.1",
@@ -19,6 +27,8 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.3",
     "tailwindcss": "^4.1.13"
   }
 }

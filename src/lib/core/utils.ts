@@ -97,3 +97,96 @@ export function searchDebtors(state: AppState, q: string) {
   if (!s) return state.debtors
   return state.debtors.filter((d) => d.name.toLowerCase().includes(s))
 }
+
+/**
+ * Update an existing sale's items (product name, quantity, unit price) and recompute the total.
+ * Unknown item ids are ignored. Quantity is clamped to >= 1 and unitPrice to >= 0.
+ */
+export function updateSale(
+  state: AppState,
+  saleId: UUID,
+  items: Array<Pick<SaleItem, 'id' | 'product' | 'quantity' | 'unitPrice'>>,
+): void {
+  const sale = state.sales.find((s) => s.id === saleId)
+  if (!sale) return
+  const map = new Map(items.map((it) => [it.id, it]))
+  sale.items = sale.items.map((orig) => {
+    const upd = map.get(orig.id)
+    if (!upd) return orig
+    const product = (upd.product ?? orig.product).toString().trim()
+    const quantity = Math.max(1, Number.isFinite(upd.quantity) ? Number(upd.quantity) : orig.quantity)
+    const unitPrice = Math.max(0, Number.isFinite(upd.unitPrice) ? Number(upd.unitPrice) : orig.unitPrice)
+    return { ...orig, product, quantity, unitPrice }
+  })
+  sale.total = sale.items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0)
+}
+
+/** Toggle a sale as paid (delivered) or pending, setting deliveredAt accordingly. */
+export function setSalePaid(state: AppState, saleId: UUID, paid: boolean): void {
+  const sale = state.sales.find((s) => s.id === saleId)
+  if (!sale) return
+  if (paid) {
+    sale.status = 'delivered'
+    if (!sale.deliveredAt) sale.deliveredAt = new Date().toISOString()
+  } else {
+    sale.status = 'pending'
+    sale.deliveredAt = undefined
+  }
+}
+
+/** Update the name of a debtor by id. Trims input; ignores empty. */
+export function updateDebtorName(state: AppState, debtorId: UUID, newName: string): void {
+  const name = newName?.toString().trim()
+  if (!name) return
+  const d = state.debtors.find((x) => x.id === debtorId)
+  if (!d) return
+  d.name = name
+}
+
+/** Set a per-sale debtorName override for a specific sale. */
+// Per-sale debtorName override removed by request; global debtor name will be updated instead.
+
+/** Return top N product names by frequency across all sales. */
+export function topProducts(state: AppState, limit = 5): string[] {
+  const counts = new Map<string, { count: number; label: string }>()
+  for (const s of state.sales) {
+    for (const it of s.items) {
+      const key = it.product.trim().toLowerCase()
+      const rec = counts.get(key)
+      if (rec) {
+        rec.count += 1
+        rec.label = it.product // keep latest original casing
+      } else {
+        counts.set(key, { count: 1, label: it.product })
+      }
+    }
+  }
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map((x) => x.label)
+}
+
+/** Return top N product names by frequency for a debtor name (case-insensitive), or empty if not found. */
+export function topProductsForDebtorName(state: AppState, debtorName: string, limit = 5): string[] {
+  const d = state.debtors.find((x) => x.name.trim().toLowerCase() === debtorName.trim().toLowerCase())
+  if (!d) return []
+  const counts = new Map<string, { count: number; label: string }>()
+  for (const s of state.sales) {
+    if (s.debtorId !== d.id) continue
+    for (const it of s.items) {
+      const key = it.product.trim().toLowerCase()
+      const rec = counts.get(key)
+      if (rec) {
+        rec.count += 1
+        rec.label = it.product
+      } else {
+        counts.set(key, { count: 1, label: it.product })
+      }
+    }
+  }
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map((x) => x.label)
+}

@@ -1,7 +1,19 @@
 <script lang="ts">
   import type { NewSaleForm } from '$lib/core/types'
 
-  let { open = false, onsubmit, oncancel }: { open?: boolean; onsubmit?: (detail: NewSaleForm) => void; oncancel?: () => void } = $props()
+  let {
+    open = false,
+    onsubmit,
+    oncancel,
+    debtorSuggestions = [],
+    productSuggestions = [],
+  }: {
+    open?: boolean
+    onsubmit?: (detail: NewSaleForm) => void
+    oncancel?: () => void
+    debtorSuggestions?: string[]
+    productSuggestions?: string[]
+  } = $props()
 
   let form: NewSaleForm = $state({
     debtorName: '',
@@ -37,7 +49,14 @@
     <form class="mt-4 space-y-4" onsubmit={onSubmit}>
         <div class="grid gap-1">
           <label class="text-xs text-zinc-600" for="cliente">Cliente</label>
-          <input id="cliente" class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 ring-zinc-300 bg-white" placeholder="Nombre" bind:value={form.debtorName} required />
+          <input id="cliente" class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 ring-zinc-300 bg-white" placeholder="Nombre" bind:value={form.debtorName} list="debtor-suggestions" required />
+          {#if debtorSuggestions?.length}
+            <datalist id="debtor-suggestions">
+              {#each debtorSuggestions as name}
+                <option value={name}></option>
+              {/each}
+            </datalist>
+          {/if}
         </div>
         <div class="grid gap-1">
           <label class="text-xs text-zinc-600" for="telefono">Teléfono</label>
@@ -45,7 +64,21 @@
         </div>
         <div class="grid gap-1">
           <label class="text-xs text-zinc-600" for="producto">Producto</label>
-          <input id="producto" class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 ring-zinc-300 bg-white" placeholder="Descripción" bind:value={form.product} required />
+          <input id="producto" class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:ring-2 ring-zinc-300 bg-white" placeholder="Descripción" bind:value={form.product} list="product-suggestions" required />
+          {#if productSuggestions?.length}
+            <datalist id="product-suggestions">
+              {#each productSuggestions as p}
+                <option value={p}></option>
+              {/each}
+            </datalist>
+          {/if}
+          {#if productSuggestions?.length}
+            <div class="flex flex-wrap gap-2 pt-1">
+              {#each productSuggestions.slice(0,6) as p}
+                <button type="button" class="text-xs rounded-full border border-zinc-200 px-2 py-1 hover:bg-zinc-50" onclick={() => (form.product = p)}>{p}</button>
+              {/each}
+            </div>
+          {/if}
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="grid gap-1">
@@ -58,8 +91,8 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-      <input id="delivered" type="checkbox" bind:checked={form.delivered} class="size-4" />
-          <label for="delivered" class="text-sm">Entregado</label>
+          <input id="delivered" type="checkbox" bind:checked={form.delivered} class="size-4" />
+          <label for="delivered" class="text-sm">Pagado</label>
         </div>
         <div class="grid gap-1">
           <label class="text-xs text-zinc-600" for="notas">Notas</label>
