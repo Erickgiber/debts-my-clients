@@ -1,3 +1,6 @@
+android/keystore.properties
+*.jks
+*.keystore
 # Logs
 logs
 *.log
