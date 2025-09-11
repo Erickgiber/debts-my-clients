@@ -1,10 +1,13 @@
 import type { AppState } from './types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleString();
 
-export function exportPendingToPDF(state: AppState) {
+export async function exportPendingToPDF(state: AppState) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
   const title = 'Pagos pendientes';
@@ -135,6 +138,40 @@ export function exportPendingToPDF(state: AppState) {
 
   const pad = (n: number) => String(n).padStart(2, '0');
   const fn = `pendientes-${createdAt.getFullYear()}${pad(createdAt.getMonth() + 1)}${pad(createdAt.getDate())}-${pad(createdAt.getHours())}${pad(createdAt.getMinutes())}.pdf`;
+
+  // Save differently on native (Android) vs web
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // jsPDF -> base64
+      const dataUri = doc.output('datauristring');
+      const base64 = dataUri.split('base64,')[1] ?? '';
+      if (!base64) throw new Error('No se pudo generar el PDF (base64 vacío)');
+
+      // Write to app Documents
+      await Filesystem.writeFile({
+        path: fn,
+        data: base64,
+        directory: Directory.Documents,
+        recursive: true,
+      });
+
+      // Get shareable uri (content:// en Android)
+      const { uri } = await Filesystem.getUri({ path: fn, directory: Directory.Documents });
+      try {
+        await Share.share({ title: 'Pagos pendientes', text: 'PDF generado', url: uri });
+      } catch {
+        // Sharing not available; silently ignore
+      }
+      return;
+    } catch (err) {
+      console.error('Error guardando PDF en dispositivo:', err);
+      // Fallback to open/save in webview if anything fails
+      doc.save(fn);
+      return;
+    }
+  }
+
+  // Web fallback
   doc.save(fn);
 }
 

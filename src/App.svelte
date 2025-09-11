@@ -32,8 +32,8 @@
   $effect(() => {
     saveState(status);
   });
-  function onExportPDF() {
-    exportPendingToPDF(status);
+  async function onExportPDF() {
+    await exportPendingToPDF(status);
   }
 
   const totalPendingAmount = $derived(
