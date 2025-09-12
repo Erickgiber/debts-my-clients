@@ -330,10 +330,17 @@
           <div class="space-y-3">
             <div class="flex items-end justify-between">
               <h2 class="text-base font-semibold">{debtor.name}</h2>
-              <span class="text-sm text-zinc-600"
-                >{summaryLabel}:
-                <span class="font-medium">{currency(filteredSumForDebtor(debtor.id))}</span></span
-              >
+              <div class="text-right leading-tight">
+                <div class="text-sm text-zinc-600">
+                  {summaryLabel}:
+                  <span class="font-medium">{currency(filteredSumForDebtor(debtor.id))}</span>
+                </div>
+                {#if bolivarRate}
+                  <div class="text-[10px] text-zinc-500">
+                    ≈ Bs {(filteredSumForDebtor(debtor.id) * bolivarRate).toFixed(2)}
+                  </div>
+                {/if}
+              </div>
             </div>
             <div class="grid gap-3">
               {#each salesByDebtor(debtor.id) as sale (sale.id)}
