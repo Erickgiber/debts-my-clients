@@ -1,0 +1,21 @@
+{
+  "name": "Gestor de Ventas",
+  "short_name": "Ventas",
+  "description": "Gestor simple de ventas y deudas de clientes (offline primero)",
+  "lang": "es",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

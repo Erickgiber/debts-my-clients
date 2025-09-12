@@ -44,3 +44,26 @@ Desarrollo
 
 - Requisitos: Node 18+
 - Scripts: `npm run dev`, `npm run build`, `npm run preview`
+
+## PWA (Instalable en iOS, Android y Escritorio)
+
+La app incluye soporte PWA para instalación desde el navegador.
+
+### Probar local
+1. `npm run dev`
+2. Abre la URL local (ej: http://localhost:5173)
+3. DevTools > Application > Manifest debe mostrar datos válidos.
+4. Chrome/Edge: icono de instalar en omnibox.
+5. Safari iOS: Compartir > Agregar a pantalla de inicio.
+
+### Archivos clave
+- `public/manifest.webmanifest`
+- `public/sw.js`
+- `index.html`
+- `src/main.ts`
+
+### Consejos
+- Cambia `CACHE_NAME` en `sw.js` para forzar actualización.
+- Añade más tamaños de íconos si los necesitas (ej: 192, 256, 384, 512 maskable).
+- iOS no soporta `beforeinstallprompt`; proceso manual.
+
