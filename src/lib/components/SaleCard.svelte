@@ -205,31 +205,35 @@
         </div>
       {/if}
       {#each draftItems as it, i (it.id)}
-        <div class="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2">
+        <div
+          class="flex flex-wrap items-end gap-2 rounded-md bg-zinc-50 p-2 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] sm:bg-transparent sm:p-0"
+        >
+          <div class="min-w-[140px] flex-1">
+            <input
+              class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+              bind:value={draftItems[i].product}
+              placeholder="Producto"
+            />
+          </div>
           <input
-            class="rounded-lg border border-zinc-200 px-2 py-1 text-sm"
-            bind:value={draftItems[i].product}
-            placeholder="Producto"
-          />
-          <input
-            class="w-16 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+            class="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
             type="number"
             min="1"
             bind:value={draftItems[i].quantity}
           />
           <input
-            class="w-24 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+            class="w-28 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
             type="number"
             min="0"
             step="0.01"
             bind:value={draftItems[i].unitPrice}
           />
-          <span class="w-20 text-right text-xs text-zinc-600"
+          <span class="ml-auto w-auto text-right text-xs text-zinc-600 sm:w-20"
             >{currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}</span
           >
           <button
             type="button"
-            class="text-xs text-red-600 hover:underline"
+            class="text-xs text-red-600 hover:underline disabled:opacity-40"
             aria-label="Eliminar"
             onclick={() => removeDraftItem(it.id)}
             disabled={draftItems.length === 1}>✕</button
@@ -314,42 +318,44 @@
         • Pagado hace {daysSince(sale.deliveredAt)} días
       {/if}
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap justify-end gap-2 sm:flex-nowrap sm:items-center">
       {#if sale.status === 'pending' && !editing}
-        {#if !addingPayment}
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {#if !addingPayment}
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] sm:w-auto"
+              onclick={startAddPayment}>Abonar</button
+            >
+          {:else}
+            <div class="flex w-full items-center gap-1 sm:w-auto">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="w-full max-w-[110px] rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+                placeholder="$"
+                bind:value={partialAmount}
+              />
+              <button
+                type="button"
+                class="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500"
+                onclick={confirmAddPayment}
+                disabled={!partialAmount}>OK</button
+              >
+              <button
+                type="button"
+                class="rounded-lg bg-zinc-200 px-2 py-1 text-xs font-medium hover:bg-zinc-300"
+                onclick={cancelAddPayment}>✕</button
+              >
+            </div>
+          {/if}
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98]"
-            onclick={startAddPayment}>Abonar</button
+            class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98] sm:w-auto"
+            onclick={() => onMarkDelivered(sale.id)}>Marcar pagado</button
           >
-        {:else}
-          <div class="flex items-center gap-1">
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              class="w-24 rounded-lg border border-zinc-300 px-2 py-1 text-xs"
-              placeholder="$"
-              bind:value={partialAmount}
-            />
-            <button
-              type="button"
-              class="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500"
-              onclick={confirmAddPayment}
-              disabled={!partialAmount}>OK</button
-            >
-            <button
-              type="button"
-              class="rounded-lg bg-zinc-200 px-2 py-1 text-xs font-medium hover:bg-zinc-300"
-              onclick={cancelAddPayment}>✕</button
-            >
-          </div>
-        {/if}
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98]"
-          onclick={() => onMarkDelivered(sale.id)}>Marcar pagado</button
-        >
+        </div>
       {/if}
       {#if debtorPhone && !editing}
         <a
