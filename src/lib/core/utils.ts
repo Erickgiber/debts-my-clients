@@ -65,6 +65,7 @@ export function addSale(
     debtorId: debtor.id,
     items: items.map((it) => ({ ...it, id: uid() })),
     total: items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0),
+    paid: delivered ? items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0) : 0,
     status: delivered ? 'delivered' : 'pending',
     deliveredAt: delivered ? new Date().toISOString() : undefined,
     createdAt: new Date().toISOString(),
@@ -83,6 +84,7 @@ export function markDelivered(state: AppState, saleId: UUID) {
   const sale = state.sales.find((s) => s.id === saleId);
   if (sale) {
     sale.status = 'delivered';
+    sale.paid = sale.total;
     sale.deliveredAt = new Date().toISOString();
   }
 }
@@ -92,6 +94,76 @@ export function currency(n: number, locale = 'es-MX', currency = 'MXN') {
     return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n);
   } catch {
     return `$${n.toFixed(2)}`;
+  }
+}
+
+// --- Bolivar (VES) exchange rate helpers ---
+interface StoredRate {
+  value: number; // bolivares per 1 USD
+  updatedAt: string; // ISO
+}
+
+export interface BolivarRateData {
+  value: number;
+  updatedAt: string; // ISO
+}
+
+const BOLIVAR_RATE_KEY = 'bolivar-rate-v1';
+
+/** Load cached bolivar rate from localStorage if not older than 3 hours. */
+function getCachedBolivarRateData(): BolivarRateData | null {
+  try {
+    const raw = localStorage.getItem(BOLIVAR_RATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredRate;
+    const ageMs = Date.now() - new Date(parsed.updatedAt).getTime();
+    if (ageMs > 1000 * 60 * 60 * 3) return null; // > 3h old
+    if (typeof parsed.value === 'number' && parsed.value > 0)
+      return { value: parsed.value, updatedAt: parsed.updatedAt };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheBolivarRate(value: number) {
+  try {
+    const rec: StoredRate = { value, updatedAt: new Date().toISOString() };
+    localStorage.setItem(BOLIVAR_RATE_KEY, JSON.stringify(rec));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Fetch current official bolivar exchange rate (bolivares per USD). */
+export async function fetchBolivarRate(signal?: AbortSignal): Promise<BolivarRateData | null> {
+  const cached = getCachedBolivarRateData();
+  if (cached) return cached;
+  try {
+    const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', { signal });
+    if (!res.ok) throw new Error('Failed to fetch rate');
+    const data = await res.json();
+    const value = Number(data?.promedio);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    cacheBolivarRate(value);
+    return { value, updatedAt: new Date().toISOString() };
+  } catch {
+    return null;
+  }
+}
+
+/** Return cached bolivar rate (may be expired if older than cache window returns null). */
+export function getBolivarCached(): BolivarRateData | null {
+  return getCachedBolivarRateData();
+}
+
+/** Format amount in bolivares given a USD amount and a bolivar-per-USD rate. */
+export function formatBs(amountUSD: number, rate: number, locale = 'es-VE'): string {
+  const bolivares = amountUSD * rate;
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: 'VES' }).format(bolivares);
+  } catch {
+    return `Bs ${bolivares.toFixed(2)}`;
   }
 }
 
@@ -114,26 +186,28 @@ export function searchDebtors(state: AppState, q: string) {
 export function updateSale(
   state: AppState,
   saleId: UUID,
-  items: Array<Pick<SaleItem, 'id' | 'product' | 'quantity' | 'unitPrice'>>,
+  items: Array<{ id?: UUID; product: string; quantity: number; unitPrice: number }>,
 ): void {
   const sale = state.sales.find((s) => s.id === saleId);
   if (!sale) return;
-  const map = new Map(items.map((it) => [it.id, it]));
-  sale.items = sale.items.map((orig) => {
-    const upd = map.get(orig.id);
-    if (!upd) return orig;
-    const product = (upd.product ?? orig.product).toString().trim();
-    const quantity = Math.max(
-      1,
-      Number.isFinite(upd.quantity) ? Number(upd.quantity) : orig.quantity,
-    );
-    const unitPrice = Math.max(
-      0,
-      Number.isFinite(upd.unitPrice) ? Number(upd.unitPrice) : orig.unitPrice,
-    );
-    return { ...orig, product, quantity, unitPrice };
-  });
+  const existing = new Map(sale.items.map((it) => [it.id, it]));
+  const next: SaleItem[] = [];
+  for (const incoming of items) {
+    const product = incoming.product?.toString().trim();
+    if (!product) continue; // skip invalid
+    const quantity = Math.max(1, Number(incoming.quantity));
+    const unitPrice = Math.max(0, Number(incoming.unitPrice));
+    if (incoming.id && existing.has(incoming.id)) {
+      const prev = existing.get(incoming.id)!;
+      next.push({ ...prev, product, quantity, unitPrice });
+    } else {
+      next.push({ id: uid(), product, quantity, unitPrice });
+    }
+  }
+  if (!next.length) return; // don't allow empty sale
+  sale.items = next;
   sale.total = sale.items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0);
+  if (sale.paid && sale.paid > sale.total) sale.paid = sale.total; // cap after edits
 }
 
 /** Toggle a sale as paid (delivered) or pending, setting deliveredAt accordingly. */
@@ -142,11 +216,32 @@ export function setSalePaid(state: AppState, saleId: UUID, paid: boolean): void 
   if (!sale) return;
   if (paid) {
     sale.status = 'delivered';
+    sale.paid = sale.total;
     if (!sale.deliveredAt) sale.deliveredAt = new Date().toISOString();
   } else {
     sale.status = 'pending';
     sale.deliveredAt = undefined;
+    if (sale.paid && sale.paid >= sale.total) {
+      // If previously fully paid, keep amount but status now pending; business rule could reset. We'll leave as is.
+    }
   }
+}
+
+/** Register a partial payment (abono) on a sale. Clamps between 0 and sale.total. */
+export function addPartialPayment(state: AppState, saleId: UUID, amount: number): void {
+  const sale = state.sales.find((s) => s.id === saleId);
+  if (!sale) return;
+  const amt = Math.max(0, Number(amount) || 0);
+  sale.paid = Math.min(sale.total, (sale.paid || 0) + amt);
+  if (sale.paid >= sale.total) {
+    sale.status = 'delivered';
+    if (!sale.deliveredAt) sale.deliveredAt = new Date().toISOString();
+  }
+}
+
+/** Remaining amount (total - paid). */
+export function remainingAmount(sale: Sale): number {
+  return Math.max(0, sale.total - (sale.paid || 0));
 }
 
 /** Update the name of a debtor by id. Trims input; ignores empty. */

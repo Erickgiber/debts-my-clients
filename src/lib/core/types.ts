@@ -22,6 +22,7 @@ export interface Sale {
   debtorId: UUID;
   items: SaleItem[];
   total: number;
+  paid?: number; // total amount paid (<= total)
   deliveredAt?: string; // ISO if delivered
   createdAt: string; // ISO
   status: SaleStatus;
@@ -35,9 +36,11 @@ export interface AppState {
 export interface NewSaleForm {
   debtorName: string;
   phone?: string;
-  product: string;
-  quantity: number;
-  unitPrice: number;
+  items: Array<{
+    product: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
   delivered: boolean;
   notes?: string;
 }
