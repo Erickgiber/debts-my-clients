@@ -20,7 +20,8 @@
     "android:build:release": "npm run build && npx cap copy android && cd android && gradlew.bat assembleRelease",
     "android:install:debug": "cd android && gradlew.bat installDebug",
     "android:install:release": "cd android && gradlew.bat installRelease",
-    "android:clean": "cd android && gradlew.bat clean"
+    "android:clean": "cd android && gradlew.bat clean",
+    "bump-version": "node scripts/bump-version.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.6",
