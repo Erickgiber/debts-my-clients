@@ -244,6 +244,7 @@
     totalSales={totalSalesCount}
     onAdd={() => (openSheet = true)}
     onExport={onExportPDF}
+    {isDesktop}
     {bolivarRate}
     {bolivarRateUpdatedAt}
   />
@@ -272,7 +273,7 @@
     {/if}
   </div>
 
-  <main class="mx-auto w-full max-w-7xl px-4 pt-4 pb-24 lg:pb-12">
+  <main class="mx-auto w-full max-w-7xl overflow-x-hidden px-4 pt-4 pb-24 lg:pb-12">
     <div class="grid gap-6 lg:grid-cols-[300px_1fr]">
       <aside class="space-y-6 lg:sticky lg:top-[64px] lg:self-start">
         <div class="relative">
