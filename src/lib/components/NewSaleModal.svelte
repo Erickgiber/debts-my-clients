@@ -86,6 +86,18 @@
     // El cierre real (y reset) se maneja en onClose para permitir animación.
   }
   const confirmMessage = 'Hay datos sin guardar. ¿Cerrar de todos modos?';
+  // Custom confirmation state (replaces blocking native confirm)
+  let showConfirm = $state(false);
+  let ignoreUnsaved = $state(false); // when true, next close proceeds without prompt
+
+  function cancelUnsavedPrompt() {
+    showConfirm = false;
+  }
+  function confirmUnsaved(close: () => void) {
+    ignoreUnsaved = true;
+    showConfirm = false;
+    close();
+  }
 </script>
 
 <!-- Svelte snippet (outside <script>) used as children for ModalPortal -->
@@ -251,6 +263,44 @@
         >
       </div>
     </form>
+    {#if showConfirm}
+      <!-- Unsaved confirmation overlay -->
+      <div class="fixed inset-0 z-[1200] flex items-center justify-center px-4">
+        <div
+          class="animate-fade-in absolute inset-0 bg-black/40 backdrop-blur-sm"
+          aria-hidden="true"
+        ></div>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unsaved-title"
+          class="animate-scale-in relative w-full max-w-sm origin-center rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5"
+        >
+          <div class="space-y-4">
+            <header class="space-y-1">
+              <h3 id="unsaved-title" class="text-sm font-semibold tracking-tight text-zinc-900">
+                Descartar cambios
+              </h3>
+              <p class="text-xs leading-relaxed text-zinc-600">
+                Tienes datos sin guardar en esta nueva venta. ¿Deseas cerrar y perderlos?
+              </p>
+            </header>
+            <div class="flex flex-col gap-2 pt-2 sm:flex-row-reverse sm:justify-end">
+              <button
+                type="button"
+                class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.97]"
+                onclick={cancelUnsavedPrompt}>Seguir editando</button
+              >
+              <button
+                type="button"
+                class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition ring-inset hover:bg-red-50 active:scale-[.97]"
+                onclick={() => confirmUnsaved(close)}>Salir sin guardar</button
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -259,13 +309,49 @@
     labelledBy="new-sale-modal-title"
     size="lg"
     beforeClose={() => {
-      if (hasUserInput() && !confirm(confirmMessage)) return false;
+      if (hasUserInput() && !ignoreUnsaved) {
+        showConfirm = true;
+        return false; // stop close, show custom dialog
+      }
+      ignoreUnsaved = false; // reset flag for next open
     }}
     onClose={() => {
-      // Si se guardó, onsubmit ya fue llamado; reset para limpiar draft.
       reset();
+      showConfirm = false;
+      ignoreUnsaved = false;
       oncancel?.();
     }}
     children={newSaleModal}
   />
 {/if}
+
+<style>
+  .animate-fade-in {
+    animation: fade-in 0.18s ease-out;
+  }
+  .animate-scale-in {
+    animation: scale-in 0.22s cubic-bezier(0.16, 0.8, 0.24, 1);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(8px);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.02) translateY(0);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+</style>

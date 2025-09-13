@@ -25,6 +25,44 @@
     notes: '',
   });
 
+  // Detect unsaved input similar to modal implementation
+  function hasUserInput(): boolean {
+    if (form.debtorName.trim()) return true;
+    if (form.phone?.trim()) return true;
+    if (form.notes?.trim()) return true;
+    if (form.delivered) return true;
+    if (form.items.length !== 1) return true;
+    const only = form.items[0];
+    if (only.product.trim()) return true;
+    if (only.quantity !== 1) return true;
+    if (only.unitPrice !== 0) return true;
+    return false;
+  }
+
+  let showConfirm = $state(false);
+  let ignoreUnsaved = $state(false);
+
+  function attemptClose() {
+    if (hasUserInput() && !ignoreUnsaved) {
+      showConfirm = true;
+      return;
+    }
+    doClose();
+  }
+  function doClose() {
+    showConfirm = false;
+    ignoreUnsaved = false;
+    reset();
+    oncancel?.();
+  }
+  function stayEditing() {
+    showConfirm = false;
+  }
+  function discardAndClose() {
+    ignoreUnsaved = true;
+    attemptClose();
+  }
+
   function reset() {
     form = {
       debtorName: '',
@@ -45,7 +83,8 @@
       if (it.unitPrice < 0) return;
     }
     onsubmit?.(form);
-    reset();
+    // After successful save, close and reset
+    doClose();
   }
 
   function addItem() {
@@ -62,11 +101,7 @@
 
 {#if open}
   <div class="fixed inset-0 z-50 flex">
-    <button
-      type="button"
-      class="flex-1 bg-black/40"
-      onclick={() => oncancel?.()}
-      aria-label="Cerrar"
+    <button type="button" class="flex-1 bg-black/40" onclick={attemptClose} aria-label="Cerrar"
     ></button>
     <aside
       class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl lg:max-w-xl lg:p-6"
@@ -76,7 +111,7 @@
         <button
           type="button"
           class="grid size-8 place-content-center rounded-lg hover:bg-zinc-100"
-          onclick={() => oncancel?.()}
+          onclick={attemptClose}
           aria-label="Cerrar">✕</button
         >
       </header>
@@ -220,7 +255,7 @@
           <button
             type="button"
             class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98]"
-            onclick={() => oncancel?.()}>Cancelar</button
+            onclick={attemptClose}>Cancelar</button
           >
           <button
             type="submit"
@@ -229,6 +264,78 @@
           >
         </div>
       </form>
+      {#if showConfirm}
+        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            class="animate-fade-in absolute inset-0 bg-black/40 backdrop-blur-sm"
+            aria-hidden="true"
+            onclick={stayEditing}
+          ></div>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unsaved-title-sheet"
+            class="animate-scale-in relative w-full max-w-sm origin-center rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5"
+          >
+            <div class="space-y-4">
+              <header class="space-y-1">
+                <h3
+                  id="unsaved-title-sheet"
+                  class="text-sm font-semibold tracking-tight text-zinc-900"
+                >
+                  Descartar cambios
+                </h3>
+                <p class="text-xs leading-relaxed text-zinc-600">
+                  Tienes datos sin guardar. ¿Cerrar y perderlos?
+                </p>
+              </header>
+              <div class="flex flex-col gap-2 pt-2 sm:flex-row-reverse sm:justify-end">
+                <button
+                  type="button"
+                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.97]"
+                  onclick={stayEditing}>Seguir editando</button
+                >
+                <button
+                  type="button"
+                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition ring-inset hover:bg-red-50 active:scale-[.97]"
+                  onclick={discardAndClose}>Salir sin guardar</button
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
     </aside>
   </div>
 {/if}
+
+<style>
+  .animate-fade-in {
+    animation: fade-in 0.18s ease-out;
+  }
+  .animate-scale-in {
+    animation: scale-in 0.22s cubic-bezier(0.16, 0.8, 0.24, 1);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(8px);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.02) translateY(0);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+</style>
