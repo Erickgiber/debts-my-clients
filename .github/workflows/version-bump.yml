@@ -40,22 +40,24 @@ jobs:
           echo "type=$TYPE" >> $GITHUB_OUTPUT
       - name: Bump version
         if: steps.decide.outputs.type != 'none'
+        env:
+          BUMP_TYPE: ${{ steps.decide.outputs.type }}
         run: |
-          TYPE='${{ steps.decide.outputs.type }}'
           node <<'EOF'
 const fs = require('fs');
 const type = process.env.BUMP_TYPE;
+if(!type){ console.error('No bump type provided'); process.exit(1); }
 const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
 const [MA,MI,PA] = pkg.version.split('.').map(n=>parseInt(n,10)||0);
 let next = pkg.version;
 if (type === 'major') next = `${MA+1}.0.0`;
 else if (type === 'minor') next = `${MA}.${MI+1}.0`;
 else if (type === 'patch') next = `${MA}.${MI}.${PA+1}`;
+if(next === pkg.version){ console.log('No version change'); process.exit(0); }
 pkg.version = next;
 fs.writeFileSync('package.json', JSON.stringify(pkg,null,2)+'\n');
 console.log('Version ->', next);
 EOF
-          echo "BUMP_TYPE=$TYPE" >> $GITHUB_ENV
       - name: Commit & tag
         if: steps.decide.outputs.type != 'none'
         run: |
