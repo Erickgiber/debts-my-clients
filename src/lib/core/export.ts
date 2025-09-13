@@ -17,9 +17,9 @@ export async function exportPendingToPDF(state: AppState) {
   doc.setProperties({
     title,
     subject: 'Listado de pagos pendientes',
-    author: 'Debts & Ventas',
-    keywords: 'deudas, ventas, pagos, PDF',
-    creator: 'Debts & Ventas',
+    author: 'Gestor de ventas',
+    keywords: 'Gestor de ventas, deudas, ventas, pagos, PDF',
+    creator: 'Gestor de ventas',
   });
 
   const pendingSales = state.sales.filter((s) => s.status !== 'delivered');
@@ -120,7 +120,7 @@ export async function exportPendingToPDF(state: AppState) {
         const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth();
         doc.setFontSize(9);
         doc.setTextColor(120);
-        doc.text(`Debts & Ventas • ${title}`, left, pageHeight - 24);
+        doc.text(`Gestor de ventas • ${title}`, left, pageHeight - 24);
         const str = `Página ${doc.getNumberOfPages()}`;
         const textWidth = doc.getTextWidth(str);
         doc.text(str, pageWidth - left - textWidth, pageHeight - 24);

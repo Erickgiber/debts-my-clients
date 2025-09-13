@@ -11,17 +11,13 @@
     markDelivered,
     saveState,
     searchDebtors,
-    sumDebtsForDebtor,
     upsertDebtor,
     updateSale,
     setSalePaid,
     topProducts,
-    topProductsForDebtorName,
     updateDebtorName,
     fetchBolivarRate,
-    formatBs,
     addPartialPayment,
-    remainingAmount,
   } from '$lib/core/utils';
   import { exportPendingToPDF } from '$lib/core/export';
 

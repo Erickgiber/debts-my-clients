@@ -5,14 +5,41 @@ export const uid = (): UUID =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36)) as UUID;
 
-const STORAGE_KEY = 'debts-app-state-v1';
+// Current storage key (renamed from legacy 'debts-app-state-v1').
+// Chosen English, structured name per request.
+const STORAGE_KEY = 'sales-manager-state-v1';
+// Legacy keys to migrate from (first found will be migrated then removed).
+const LEGACY_STORAGE_KEYS = ['debts-app-state-v1'];
 
 export function loadState(): AppState {
   if (typeof localStorage === 'undefined') {
     return { debtors: [], sales: [] };
   }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    // If new key already exists, use it directly.
+    let raw = localStorage.getItem(STORAGE_KEY);
+
+    // Attempt migration from legacy keys if new key absent.
+    if (!raw) {
+      for (const legacyKey of LEGACY_STORAGE_KEYS) {
+        if (legacyKey === STORAGE_KEY) continue;
+        const legacyRaw = localStorage.getItem(legacyKey);
+        if (legacyRaw) {
+          try {
+            // Validate JSON before migrating.
+            const parsed = JSON.parse(legacyRaw) as AppState;
+            if (parsed && Array.isArray(parsed.debtors) && Array.isArray(parsed.sales)) {
+              localStorage.setItem(STORAGE_KEY, legacyRaw);
+              localStorage.removeItem(legacyKey);
+              raw = legacyRaw;
+              break;
+            }
+          } catch {
+            // Ignore invalid legacy content; do not migrate.
+          }
+        }
+      }
+    }
     if (!raw) return { debtors: [], sales: [] };
     const parsed = JSON.parse(raw) as AppState;
     return parsed;
