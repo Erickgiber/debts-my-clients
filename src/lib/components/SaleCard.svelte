@@ -1,10 +1,7 @@
 <script lang="ts">
   import type { Sale, SaleItem } from '$lib/core/types';
   import { currency, daysSince, remainingAmount } from '$lib/core/utils';
-  import { createEventDispatcher } from 'svelte';
   import ModalPortal from '$lib/components/SaleModalPortal.svelte';
-
-  const dispatch = createEventDispatcher<{ partialpayment: { saleId: string; amount: number } }>();
 
   let {
     sale,
@@ -13,6 +10,7 @@
     onMarkDelivered,
     onEdit,
     bolivarRate,
+    onPartialPayment,
   }: {
     sale: Sale;
     debtorName: string;
@@ -28,6 +26,7 @@
         debtorPhone?: string;
       },
     ) => void;
+    onPartialPayment?: (saleId: string, amount: number) => void;
   } = $props();
 
   let editing = $state(false);
@@ -96,7 +95,7 @@
   function confirmAddPayment() {
     const value = Number(partialAmount);
     if (!Number.isFinite(value) || value <= 0) return;
-    dispatch('partialpayment', { saleId: sale.id, amount: value });
+    onPartialPayment?.(sale.id, value);
     addingPayment = false;
     partialAmount = '';
   }

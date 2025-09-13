@@ -62,8 +62,8 @@
     markDelivered(status, id);
   }
 
-  function onPartialPayment(e: CustomEvent<{ saleId: string; amount: number }>) {
-    addPartialPayment(status, e.detail.saleId, e.detail.amount);
+  function onPartialPayment(saleId: string, amount: number) {
+    addPartialPayment(status, saleId, amount);
   }
 
   function onEditSale(
@@ -474,7 +474,7 @@
                           {onMarkDelivered}
                           onEdit={onEditSale}
                           {bolivarRate}
-                          on:partialpayment={onPartialPayment}
+                          {onPartialPayment}
                         />
                       </div>
                     {/each}
