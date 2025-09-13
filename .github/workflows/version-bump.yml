@@ -1,3 +1,4 @@
+# .github/workflows/version-bump.yml
 name: Version Bump & Tag
 
 on:
@@ -36,19 +37,21 @@ jobs:
           if echo "$LAST_COMMIT_MSG" | grep -qE '^[a-zA-Z]+!:'; then TYPE=major; fi
           if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^feat(\(|:)'; then TYPE=minor; fi
           if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^(fix|perf|release)(\(|:)'; then TYPE=patch; fi
-          if [ -z "$TYPE" ]; then echo "No bump"; echo "type=none" >> $GITHUB_OUTPUT; exit 0; fi
-          echo "type=$TYPE" >> $GITHUB_OUTPUT
+          if [ -z "$TYPE" ]; then 
+            echo "type=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+
       - name: Bump version
         if: steps.decide.outputs.type != 'none'
         run: |
-          TYPE='${{ steps.decide.outputs.type }}'
+          TYPE=${{ steps.decide.outputs.type }}
           CURR=$(jq -r .version package.json)
-          IFS='.' read -r MA MI PA <<EOF
-$CURR
-EOF
-          if [ "$TYPE" = major ]; then
+          IFS='.' read -r MA MI PA <<< "$CURR"
+          if [ "$TYPE" = "major" ]; then
             MA=$((MA+1)); MI=0; PA=0
-          elif [ "$TYPE" = minor ]; then
+          elif [ "$TYPE" = "minor" ]; then
             MI=$((MI+1)); PA=0
           else
             PA=$((PA+1))
@@ -57,13 +60,14 @@ EOF
           if [ "$NEXT" = "$CURR" ]; then
             echo "No version change"; exit 0
           fi
-          tmp=$(mktemp); jq --arg v "$NEXT" '.version=$v' package.json > "$tmp" && mv "$tmp" package.json
+          tmp=$(mktemp)
+          jq --arg v "$NEXT" '.version=$v' package.json > "$tmp" && mv "$tmp" package.json
           echo "Version -> $NEXT"
 
       - name: Generate changelog
         if: steps.decide.outputs.type != 'none'
-        run: |
-          node scripts/update-changelog.mjs
+        run: node scripts/update-changelog.mjs
+
       - name: Commit & tag
         if: steps.decide.outputs.type != 'none'
         run: |
@@ -72,8 +76,10 @@ EOF
           git config user.email "github-actions@users.noreply.github.com"
           git add package.json CHANGELOG.md
           git commit -m "ci: bump version to $NEXT_VERSION" || echo "Skip commit (no changes)"
-          git tag -a v$NEXT_VERSION -m "Release v$NEXT_VERSION" || echo "Tag ya existe"
-          git push --follow-tags
+          git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION" || echo "Tag ya existe"
+          git push origin main || echo "Nada que pushear"
+          git push origin "v$NEXT_VERSION" || echo "Tag ya existe"
+
       - name: Output skipped
         if: steps.decide.outputs.type == 'none'
         run: echo "No semantic bump required."
