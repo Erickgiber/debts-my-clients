@@ -11,10 +11,33 @@ export default app;
 // Service Worker handling
 // Solo registrar el SW en producción para evitar cache en desarrollo.
 if ('serviceWorker' in navigator) {
+  const version = (import.meta as any).env.VITE_APP_VERSION || 'dev';
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
+      const swUrl = `/sw.js?v=${encodeURIComponent(version)}`;
       navigator.serviceWorker
-        .register('/sw.js')
+        .register(swUrl)
+        .then((reg) => {
+          // Escuchar actualizaciones del SW
+          if (reg.waiting) {
+            // Hay una versión esperando: forzar skipWaiting + reload
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // Cuando el nuevo SW toma control, recargar para usar nueva versión
+            window.location.reload();
+          });
+        })
         .catch((err) => console.warn('SW registration failed', err));
     });
   } else {

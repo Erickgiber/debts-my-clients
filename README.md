@@ -50,6 +50,7 @@ Desarrollo
 La app incluye soporte PWA para instalación desde el navegador.
 
 ### Probar local
+
 1. `npm run dev`
 2. Abre la URL local (ej: http://localhost:5173)
 3. DevTools > Application > Manifest debe mostrar datos válidos.
@@ -57,13 +58,54 @@ La app incluye soporte PWA para instalación desde el navegador.
 5. Safari iOS: Compartir > Agregar a pantalla de inicio.
 
 ### Archivos clave
+
 - `public/manifest.webmanifest`
 - `public/sw.js`
 - `index.html`
 - `src/main.ts`
 
 ### Consejos
-- Cambia `CACHE_NAME` en `sw.js` para forzar actualización.
+
+- Ya no es necesario cambiar manualmente `CACHE_NAME`; el Service Worker se versiona automáticamente.
 - Añade más tamaños de íconos si los necesitas (ej: 192, 256, 384, 512 maskable).
 - iOS no soporta `beforeinstallprompt`; proceso manual.
 
+### Actualización automática forzada (Versionado SW)
+
+Cada build inyecta una variable `import.meta.env.VITE_APP_VERSION` construida con:
+
+`<hash-corto-git>-<timestamp YYYYMMDDHHMMSS>`
+
+Esta versión se añade como query param al registrar el Service Worker: `sw.js?v=HASH-TIME`.
+
+El propio `sw.js`:
+
+- Usa el parámetro `v` para crear un `CACHE_NAME` único (`ventas-cache-<versión>`).
+- Elimina caches antiguos durante `activate`.
+- Llama a `skipWaiting` (vía mensaje) y al tomar control dispara un `controllerchange` que fuerza `window.location.reload()` (en `src/main.ts`).
+
+Resultado: al desplegar (nuevo commit + build) todos los clientes obtienen la nueva versión sin intervención del usuario en cuanto la pestaña se vuelve activa y el SW se actualiza.
+
+#### Flujo
+
+1. Haces commit / push.
+2. Build genera nueva versión y despliegas.
+3. El navegador detecta hash nuevo (URL diferente del SW) y descarga el SW actualizado.
+4. Nuevo SW instala, limpia caches viejos, y se activa.
+5. La app recarga automáticamente con los assets frescos.
+
+#### Notas
+
+- En desarrollo (`npm run dev`) se desregistran SW previos y se borran caches (`ventas-cache*`).
+- Si no hay git disponible (ej: build en CI shallow) se usa `dev` como hash + timestamp.
+- Puedes mostrar la versión dentro de la UI leyendo `import.meta.env.VITE_APP_VERSION`.
+
+Ejemplo para mostrar versión en un componente Svelte:
+
+```svelte
+<script>
+  const version = (import.meta as any).env.VITE_APP_VERSION;
+</script>
+
+<footer class="text-xs opacity-60">v {version}</footer>
+```
