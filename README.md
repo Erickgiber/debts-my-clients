@@ -179,18 +179,39 @@ Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `
 
 ### Workflow GitHub: Auto bump en main
 
-Archivo: `.github/workflows/version-bump.yml`.
+Archivo existente: `.github/workflows/version-bump.yml`.
 
-Cuando haces push a `main`:
+Comportamiento actual del workflow incluido:
 
-1. Lee el último mensaje de commit.
-2. Decide bump (mismas reglas básicas feat/fix/perf/breaking).
-3. Si aplica, incrementa `package.json`, crea commit `ci: bump version to X.Y.Z` y tag `vX.Y.Z`.
-4. Empuja cambios + tags.
+- Solo hace bump si el mensaje del último commit contiene un tipo semántico (`feat`, `fix`, `perf`, `release`, `BREAKING CHANGE` o `tipo!:`). Si no detecta nada, no modifica la versión (a diferencia del hook local que fuerza `patch`).
 
-Esto asegura que aunque un commit pase sin hook local, el repo central mantenga versión y tag consistentes.
+Esto te da dos capas:
 
-Desactivar: elimina el workflow o limita las ramas en el YAML.
+| Capa                  | Archivo                              | Estrategia                            | ¿Fuerza patch cuando no hay tipo? |
+| --------------------- | ------------------------------------ | ------------------------------------- | --------------------------------- |
+| Local (desarrollador) | `.husky/commit-msg`                  | Bump + amend + tag                    | Sí (patch por defecto)            |
+| CI (GitHub Actions)   | `.github/workflows/version-bump.yml` | Bump y tag solo si mensaje lo amerita | No                                |
+
+Ventajas de doble capa:
+
+- Evitas olvidarte de etiquetar versiones cuando commiteas localmente.
+- En CI no “ensucias” el historial con bumps innecesarios si decides hacer un commit sin tipo semántico y deseas realmente conservar la misma versión (puedes quitar el force local si cambias de política).
+
+Si quieres que CI también fuerce patch siempre, sustituye la sección "Determine bump type" del workflow por la lógica usada en el hook o adopta la versión alternativa (se dejó un ejemplo en comentario más abajo):
+
+```yaml
+# (Ejemplo alternativo resumido para forzar patch siempre)
+# - name: Determine bump type
+#   id: decide
+#   run: |
+#     MSG=$(git log -1 --pretty=%B | tr -d '\r')
+#     if echo "$MSG" | grep -qiE 'BREAKING CHANGE|!: '; then echo "type=major" >> $GITHUB_OUTPUT; exit 0; fi
+#     if echo "$MSG" | grep -qiE '^feat(\(|: )'; then echo "type=minor" >> $GITHUB_OUTPUT; exit 0; fi
+#     if echo "$MSG" | grep -qiE '^(fix|perf|release)(\(|: )'; then echo "type=patch" >> $GITHUB_OUTPUT; exit 0; fi
+#     echo "type=patch" >> $GITHUB_OUTPUT
+```
+
+Desactivar workflow: elimina el archivo o cambia la rama en `on.push.branches`.
 
 ### Toast de actualización interactivo
 
