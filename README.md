@@ -118,3 +118,45 @@ Ejemplo para mostrar versión en un componente Svelte:
 
 <footer class="text-xs opacity-60">v {version}</footer>
 ```
+
+### Versionado semántico automático (commit → bump package.json)
+
+Se incluye un flujo simple para incrementar `package.json#version` según el mensaje del commit usando un hook de git.
+
+Herramienta: `scripts/semver-bump.mjs` + hook `.husky/commit-msg`.
+
+Reglas:
+
+- `BREAKING CHANGE:` en el cuerpo o `tipo!:` en el encabezado → bump MAJOR (x.0.0)
+- `feat:` / `feat(scope):` → bump MINOR (aumenta y resetea patch)
+- `fix:` / `perf:` / `release:` → bump PATCH
+- Otros tipos (`docs`, `chore`, `refactor`, etc.) no cambian versión (a menos que usen `!:`)
+
+Ejemplos:
+
+| Mensaje commit                        | Versión 1.2.3 → |
+| ------------------------------------- | --------------- |
+| `feat: agregar reporte PDF`           | 1.3.0           |
+| `fix(ui): corregir overflow`          | 1.2.4           |
+| `feat!: reescritura estructura datos` | 2.0.0           |
+| `refactor: limpiar utils`             | 1.2.3           |
+
+Limitaciones actuales:
+
+1. El hook `commit-msg` ocurre después de crear el commit, así que el bump modifica `package.json` pero NO entra en ese commit. Haz un commit adicional si quieres subir la versión junto con el cambio (o cambia a un hook `pre-commit`).
+2. Para incluir el bump en el mismo commit podrías migrar la lógica a un hook `prepare-commit-msg` o `pre-commit` y hacer `git add package.json` allí.
+3. Puedes forzar un tipo específico ejecutando:
+
+```powershell
+node scripts/semver-bump.mjs .git/COMMIT_EDITMSG --force minor
+```
+
+Instalación Husky (ya configurado tras `npm install`):
+
+```powershell
+npm install
+```
+
+Hook: `.husky/commit-msg` → llama al script con la ruta del mensaje.
+
+Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`.

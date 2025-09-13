@@ -7,6 +7,7 @@
     "dev": "vite --host",
     "prebuild": "node scripts/generate-version.mjs",
     "build": "vite build",
+    "prepare": "husky",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "format": "prettier --write \"**/*.{js,ts,svelte,html,css,json,md}\"",
@@ -22,6 +23,7 @@
     "android:clean": "cd android && gradlew.bat clean"
   },
   "devDependencies": {
+    "husky": "^9.1.6",
     "@capacitor/android": "^7.4.3",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.4.3",

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Hook commit-msg: decide bump de versión basado en el mensaje
+node scripts/semver-bump.mjs "$1"
