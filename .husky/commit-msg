@@ -3,4 +3,4 @@
 # Si no se detecta bump semántico, forzamos uno (por defecto patch) para asegurar nueva versión.
 # Personaliza exportando DEFAULT_BUMP=minor o major antes del commit si lo deseas.
 
-node scripts/semver-bump.mjs "$1" --force ${DEFAULT_BUMP:-patch}
+node scripts/bump-version.mjs "$1" --force ${DEFAULT_BUMP:-patch}
