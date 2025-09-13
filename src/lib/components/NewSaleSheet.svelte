@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { NewSaleForm } from '$lib/core/types';
+  import UnsavedChangesDialog from './UnsavedChangesDialog.svelte';
 
   let {
     open = false,
@@ -264,78 +265,19 @@
           >
         </div>
       </form>
-      {#if showConfirm}
-        <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            class="animate-fade-in absolute inset-0 bg-black/40 backdrop-blur-sm"
-            aria-hidden="true"
-            onclick={stayEditing}
-          ></div>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="unsaved-title-sheet"
-            class="animate-scale-in relative w-full max-w-sm origin-center rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5"
-          >
-            <div class="space-y-4">
-              <header class="space-y-1">
-                <h3
-                  id="unsaved-title-sheet"
-                  class="text-sm font-semibold tracking-tight text-zinc-900"
-                >
-                  Descartar cambios
-                </h3>
-                <p class="text-xs leading-relaxed text-zinc-600">
-                  Tienes datos sin guardar. ¿Cerrar y perderlos?
-                </p>
-              </header>
-              <div class="flex flex-col gap-2 pt-2 sm:flex-row-reverse sm:justify-end">
-                <button
-                  type="button"
-                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.97]"
-                  onclick={stayEditing}>Seguir editando</button
-                >
-                <button
-                  type="button"
-                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition ring-inset hover:bg-red-50 active:scale-[.97]"
-                  onclick={discardAndClose}>Salir sin guardar</button
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-      {/if}
+      <UnsavedChangesDialog
+        open={showConfirm}
+        onConfirm={discardAndClose}
+        onCancel={stayEditing}
+        title="Descartar cambios"
+        description="Tienes datos sin guardar. ¿Cerrar y perderlos?"
+        confirmText="Salir sin guardar"
+        cancelText="Seguir editando"
+      />
     </aside>
   </div>
 {/if}
 
 <style>
-  .animate-fade-in {
-    animation: fade-in 0.18s ease-out;
-  }
-  .animate-scale-in {
-    animation: scale-in 0.22s cubic-bezier(0.16, 0.8, 0.24, 1);
-  }
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  @keyframes scale-in {
-    0% {
-      opacity: 0;
-      transform: scale(0.9) translateY(8px);
-    }
-    60% {
-      opacity: 1;
-      transform: scale(1.02) translateY(0);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
+  /* Dialog animations moved to UnsavedChangesDialog component */
 </style>

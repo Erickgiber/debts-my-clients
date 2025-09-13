@@ -134,14 +134,11 @@
 </div>
 
 <style>
+  /* Animaciones refinadas estilo shadcn: sin rebote exagerado, easing suave, leve overshoot eliminado */
   @keyframes modal-enter-keyframes {
     0% {
       opacity: 0;
-      transform: translateY(12px) scale(0.96);
-    }
-    60% {
-      opacity: 1;
-      transform: translateY(0) scale(1.01);
+      transform: translateY(4px) scale(0.96);
     }
     100% {
       opacity: 1;
@@ -153,19 +150,23 @@
       opacity: 1;
       transform: translateY(0) scale(1);
     }
-    40% {
-      opacity: 0.6;
-      transform: translateY(4px) scale(0.98);
-    }
     100% {
       opacity: 0;
-      transform: translateY(8px) scale(0.94);
+      transform: translateY(4px) scale(0.96);
     }
   }
   .animate-modal-enter {
-    animation: modal-enter-keyframes 0.25s cubic-bezier(0.16, 0.8, 0.24, 1) forwards;
+    animation: modal-enter-keyframes 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
   }
   .animate-modal-exit {
-    animation: modal-exit-keyframes 0.22s ease forwards;
+    animation: modal-exit-keyframes 0.14s ease forwards;
+    will-change: transform, opacity;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-modal-enter,
+    .animate-modal-exit {
+      animation: none !important;
+    }
   }
 </style>

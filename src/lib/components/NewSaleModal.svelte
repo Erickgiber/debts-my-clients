@@ -288,13 +288,13 @@
             <div class="flex flex-col gap-2 pt-2 sm:flex-row-reverse sm:justify-end">
               <button
                 type="button"
-                class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.97]"
-                onclick={cancelUnsavedPrompt}>Seguir editando</button
+                class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition ring-inset hover:bg-red-50 active:scale-[.97]"
+                onclick={() => confirmUnsaved(close)}>Salir sin guardar</button
               >
               <button
                 type="button"
-                class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition ring-inset hover:bg-red-50 active:scale-[.97]"
-                onclick={() => confirmUnsaved(close)}>Salir sin guardar</button
+                class="inline-flex flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.97]"
+                onclick={cancelUnsavedPrompt}>Seguir editando</button
               >
             </div>
           </div>
@@ -326,32 +326,35 @@
 {/if}
 
 <style>
+  /* Animaciones refinadas: fade + scale suave sin rebote */
   .animate-fade-in {
-    animation: fade-in 0.18s ease-out;
+    animation: fade-in 0.15s ease-out forwards;
   }
   .animate-scale-in {
-    animation: scale-in 0.22s cubic-bezier(0.16, 0.8, 0.24, 1);
+    animation: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   @keyframes fade-in {
-    from {
+    0% {
       opacity: 0;
     }
-    to {
+    100% {
       opacity: 1;
     }
   }
   @keyframes scale-in {
     0% {
       opacity: 0;
-      transform: scale(0.9) translateY(8px);
-    }
-    60% {
-      opacity: 1;
-      transform: scale(1.02) translateY(0);
+      transform: translateY(4px) scale(0.96);
     }
     100% {
       opacity: 1;
-      transform: scale(1) translateY(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-scale-in {
+      animation: none !important;
     }
   }
 </style>
