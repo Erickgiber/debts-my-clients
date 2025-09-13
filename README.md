@@ -119,11 +119,11 @@ Ejemplo para mostrar versión en un componente Svelte:
 <footer class="text-xs opacity-60">v {version}</footer>
 ```
 
-### Versionado semántico automático (commit → bump package.json)
+### Versionado semántico automático (pre-commit → bump en mismo commit)
 
-Se incluye un flujo simple para incrementar `package.json#version` según el mensaje del commit usando un hook de git.
+Se incrementa `package.json#version` antes de finalizar el commit usando un hook `pre-commit`.
 
-Herramienta: `scripts/semver-bump.mjs` + hook `.husky/commit-msg`.
+Herramienta: `scripts/semver-bump.mjs` + hook `.husky/pre-commit`.
 
 Reglas:
 
@@ -141,11 +141,10 @@ Ejemplos:
 | `feat!: reescritura estructura datos` | 2.0.0           |
 | `refactor: limpiar utils`             | 1.2.3           |
 
-Limitaciones actuales:
+Limitaciones / notas:
 
-1. El hook `commit-msg` ocurre después de crear el commit, así que el bump modifica `package.json` pero NO entra en ese commit. Haz un commit adicional si quieres subir la versión junto con el cambio (o cambia a un hook `pre-commit`).
-2. Para incluir el bump en el mismo commit podrías migrar la lógica a un hook `prepare-commit-msg` o `pre-commit` y hacer `git add package.json` allí.
-3. Puedes forzar un tipo específico ejecutando:
+1. Si el mensaje aún no se ha escrito (porque no usaste `-m`) el script puede no inferir el cambio correcto (toma último commit). Recomendado: usar `git commit -m "feat: ..."`.
+2. Puedes forzar un tipo específico manualmente:
 
 ```powershell
 node scripts/semver-bump.mjs .git/COMMIT_EDITMSG --force minor
@@ -157,6 +156,6 @@ Instalación Husky (ya configurado tras `npm install`):
 npm install
 ```
 
-Hook: `.husky/commit-msg` → llama al script con la ruta del mensaje.
+Hook: `.husky/pre-commit` → ejecuta el bump y enmienda en el mismo commit si aplica.
 
-Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`.
+Si no deseas este comportamiento, elimina `.husky/pre-commit` y la dependencia `husky`.

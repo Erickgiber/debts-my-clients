@@ -9,6 +9,7 @@
 //  - Sólo se ejecuta si el hook commit-msg lo llamó con ruta del archivo del commit.
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 function parseArgs() {
@@ -26,17 +27,25 @@ function parseArgs() {
 }
 
 const { commitMsgFile, force } = parseArgs();
-if (!commitMsgFile) {
-  process.exit(0); // nada que hacer
-}
-
+// Si estamos en pre-commit quizá no tengamos archivo de mensaje todavía; tomar HEAD commit message provisional
 let msg = '';
-try {
-  msg = readFileSync(commitMsgFile, 'utf8').trim();
-} catch {
-  process.exit(0);
+if (commitMsgFile) {
+  try {
+    msg = readFileSync(commitMsgFile, 'utf8').trim();
+  } catch {
+    /* ignore */
+  }
 }
-
+if (!msg) {
+  try {
+    // Obtener mensaje staged usando git interpretado (si se corre en pre-commit será el último commit HEAD si es amend, o vacío si primero)
+    msg = execSync('git log -1 --pretty=%B', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    /* ignore */
+  }
+}
 if (!msg) process.exit(0);
 
 function decideBump(m) {
@@ -68,6 +77,26 @@ pkg.version = next;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 console.log(`[semver-bump] ${current} -> ${next} (${bump})`);
 
-// NOTA: No hacemos git add aquí; el hook commit-msg se ejecuta tarde (después de crear el commit).
-// Opción: informar al usuario que haga un commit de seguimiento si quiere incluir el cambio de versión.
-// Alternativa: usar pre-commit para hacer el bump antes y agregar el archivo automáticamente.
+// Evitar bucle infinito al amendar
+if (!process.env.SEMVER_BUMP_DONE) {
+  try {
+    execSync('git add package.json', { stdio: 'ignore' });
+  } catch (e) {
+    console.warn('[semver-bump] No se pudo hacer git add package.json');
+  }
+} else {
+  process.exit(0);
+}
+
+// Si se está ejecutando en commit-msg ya es tarde para incluirlo sin amend; preferimos hacer amend
+try {
+  execSync('git commit --amend --no-edit', {
+    stdio: 'ignore',
+    env: { ...process.env, SEMVER_BUMP_DONE: '1' },
+  });
+  console.log('[semver-bump] Commit enmendado con nueva versión');
+} catch (e) {
+  console.warn(
+    '[semver-bump] No se pudo amendar commit, realiza un commit manual para incluir version.',
+  );
+}

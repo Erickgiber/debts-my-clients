@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Pre-commit: ejecutar bump antes de crear el commit definitivo
+node scripts/semver-bump.mjs
