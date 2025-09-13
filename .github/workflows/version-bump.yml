@@ -1,4 +1,3 @@
-# .github/workflows/version-bump.yml
 name: Version Bump & Tag
 
 on:
@@ -9,35 +8,34 @@ permissions:
   contents: write
 
 jobs:
-  bump:
+  version-bump:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }} # permite hacer push
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install deps (fallback a npm install)
-        run: |
-          echo "Usando npm install (lock desincronizado rompe npm ci)."
-          npm install --no-audit --no-fund
+      - name: Install deps
+        run: npm install --no-audit --no-fund
 
       - name: Determine bump type
         id: decide
         run: |
           LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit: $LAST_COMMIT_MSG"
+          echo "Último commit: $LAST_COMMIT_MSG"
           TYPE=""
           if echo "$LAST_COMMIT_MSG" | grep -qi 'breaking change'; then TYPE=major; fi
           if echo "$LAST_COMMIT_MSG" | grep -qE '^[a-zA-Z]+!:'; then TYPE=major; fi
           if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^feat(\(|:)'; then TYPE=minor; fi
           if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^(fix|perf|release)(\(|:)'; then TYPE=patch; fi
-          if [ -z "$TYPE" ]; then 
+          if [ -z "$TYPE" ]; then
             echo "type=none" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -45,10 +43,12 @@ jobs:
 
       - name: Bump version
         if: steps.decide.outputs.type != 'none'
+        id: bump
         run: |
           TYPE=${{ steps.decide.outputs.type }}
           CURR=$(jq -r .version package.json)
           IFS='.' read -r MA MI PA <<< "$CURR"
+
           if [ "$TYPE" = "major" ]; then
             MA=$((MA+1)); MI=0; PA=0
           elif [ "$TYPE" = "minor" ]; then
@@ -56,30 +56,29 @@ jobs:
           else
             PA=$((PA+1))
           fi
+
           NEXT="$MA.$MI.$PA"
-          if [ "$NEXT" = "$CURR" ]; then
-            echo "No version change"; exit 0
-          fi
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+
           tmp=$(mktemp)
           jq --arg v "$NEXT" '.version=$v' package.json > "$tmp" && mv "$tmp" package.json
-          echo "Version -> $NEXT"
+          echo "✅ Versión actualizada: $CURR → $NEXT"
 
-      - name: Generate changelog
-        if: steps.decide.outputs.type != 'none'
-        run: node scripts/update-changelog.mjs
-
-      - name: Commit & tag
+      - name: Commit & Tag
         if: steps.decide.outputs.type != 'none'
         run: |
-          NEXT_VERSION=$(node -p "require('./package.json').version")
+          NEXT_VERSION=${{ steps.bump.outputs.next }}
+
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add package.json CHANGELOG.md
-          git commit -m "ci: bump version to $NEXT_VERSION" || echo "Skip commit (no changes)"
-          git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION" || echo "Tag ya existe"
-          git push origin main || echo "Nada que pushear"
-          git push origin "v$NEXT_VERSION" || echo "Tag ya existe"
+
+          git add package.json
+          git commit -m "ci: bump version to $NEXT_VERSION" || echo "Nada que commitear"
+          git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION"
+
+          git push origin main
+          git push origin "v$NEXT_VERSION"
 
       - name: Output skipped
         if: steps.decide.outputs.type == 'none'
-        run: echo "No semantic bump required."
+        run: echo "No se requiere bump de versión (commit no semántico)."
