@@ -12,10 +12,10 @@ export default app;
 // Service Worker handling
 // Solo registrar el SW en producción para evitar cache en desarrollo.
 if ('serviceWorker' in navigator) {
-  const version = (import.meta as any).env.VITE_APP_VERSION || 'dev';
+  const currentVersion = (import.meta as any).env.VITE_APP_VERSION || 'dev';
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
-      const swUrl = `/sw.js?v=${encodeURIComponent(version)}`;
+      const swUrl = `/sw.js?v=${encodeURIComponent(currentVersion)}`;
       navigator.serviceWorker
         .register(swUrl)
         .then((reg) => {
@@ -36,7 +36,7 @@ if ('serviceWorker' in navigator) {
           });
           navigator.serviceWorker.addEventListener('controllerchange', () => {
             // Mostrar toast interactivo para que el usuario decida cuándo recargar
-            showUpdatingToast(version, () => {
+            showUpdatingToast(currentVersion, currentVersion, () => {
               window.location.reload();
             });
           });
