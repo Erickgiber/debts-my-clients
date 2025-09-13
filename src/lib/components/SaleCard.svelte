@@ -2,6 +2,7 @@
   import type { Sale, SaleItem } from '$lib/core/types';
   import { currency, daysSince, remainingAmount } from '$lib/core/utils';
   import { createEventDispatcher } from 'svelte';
+  import ModalPortal from '$lib/components/SaleModalPortal.svelte';
 
   const dispatch = createEventDispatcher<{ partialpayment: { saleId: string; amount: number } }>();
 
@@ -36,6 +37,19 @@
   let draftPaid = $state(false);
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
+  let isDesktop = $state(false);
+
+  // Detect desktop
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => (isDesktop = mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  });
+
+  // Con ModalPortal ya no necesitamos manejar scroll lock, focus trap ni Escape aquí.
 
   function startEdit() {
     draftItems = sale.items.map((it) => ({
@@ -53,7 +67,6 @@
     editing = false;
   }
   function saveEdit() {
-    // simple validation
     for (const it of draftItems) {
       if (!it.product?.trim()) return;
       if (Number(it.quantity) < 1) return;
@@ -68,7 +81,6 @@
       paid: draftPaid,
       debtorName: nameChanged ? name : undefined,
       debtorPhone: phoneChanged ? phone : undefined,
-      // We'll overload by attaching a special symbol on window? Simpler: mutate globally after callback from parent. Parent currently only accepts debtorName.
     });
     editing = false;
   }
@@ -88,12 +100,11 @@
     addingPayment = false;
     partialAmount = '';
   }
-
   function addDraftItem() {
     draftItems.push({ id: crypto.randomUUID(), product: '', quantity: 1, unitPrice: 0 });
   }
   function removeDraftItem(id: string) {
-    if (draftItems.length === 1) return; // keep at least one
+    if (draftItems.length === 1) return;
     draftItems = draftItems.filter((it) => it.id !== id);
   }
 
@@ -101,55 +112,134 @@
     draftItems.reduce((sum, it) => sum + Number(it.quantity) * Number(it.unitPrice), 0),
   );
 
-  /**
-   * Normaliza números venezolanos al formato internacional (+58XXXXXXXXXX).
-   * Pensado para móviles y fijos (0AAAxxxxxxx / 0ABxxxxxxx / 04AXxxxxxxx).
-   * Estrategia:
-   * 1. Limpia caracteres no numéricos (mantiene un '+' inicial si existe).
-   * 2. Si ya está en formato +58 y tiene 10 dígitos nacionales, se devuelve igual.
-   * 3. Acepta variantes: 58XXXXXXXXXX, 0XXXXXXXXXX, 04XXXXXXXXX, 0AA..., etc.
-   * 4. Elimina ceros troncales iniciales y reconstruye con +58.
-   * 5. Si no puede garantizar exactitud, retorna una versión segura (solo dígitos) intentando conservar los últimos 10.
-   */
   function replaceNumberPhone(phone: string): string {
     if (!phone) return '';
-
-    // Limpiar: dejar dígitos y posible '+' inicial
     let raw = phone.trim().replace(/[^\d+]/g, '');
-
-    // Ya en formato correcto +58 + 10 dígitos
     if (/^\+58\d{10}$/.test(raw)) return raw;
-
-    // Quitar '+' para normalizar evaluaciones
     raw = raw.replace(/^\+/, '');
-
-    // Caso 58 + 10 dígitos
     if (/^58\d{10}$/.test(raw)) return `+${raw}`;
-
-    // Eliminar ceros troncales (uno o más)
     raw = raw.replace(/^0+/, '');
-
-    // Si después queda 10 dígitos: asumir nacional sin código país
     if (/^\d{10}$/.test(raw)) return `+58${raw}`;
-
-    // Caso atípico: sobran dígitos pero contiene una subcadena final válida de 10 dígitos
     const tail10 = raw.match(/(\d{10})$/);
     if (tail10) return `+58${tail10[1]}`;
-
-    // Fallback: extraer dígitos; si detectamos 58 delante los conservamos
     const digits = raw.replace(/\D/g, '');
     if (/^58\d{10}$/.test(digits)) return `+${digits}`;
     if (digits.length >= 10) return `+58${digits.slice(-10)}`;
-
-    // No hay suficiente información fiable
     return '';
   }
+
+  function attemptDiscard(): boolean {
+    const dirty =
+      draftDebtorName.trim() !== debtorName.trim() ||
+      (debtorPhone ?? '') !== draftDebtorPhone.trim() ||
+      draftPaid !== (sale.status === 'delivered') ||
+      draftItems.some((it, idx) => {
+        const orig = sale.items[idx];
+        if (!orig) return true;
+        return (
+          it.product !== orig.product ||
+          Number(it.quantity) !== orig.quantity ||
+          Number(it.unitPrice) !== orig.unitPrice
+        );
+      }) ||
+      sale.items.length !== draftItems.length;
+    if (dirty) {
+      if (!confirm('Hay cambios sin guardar. ¿Cerrar de todos modos?')) return false;
+    }
+    return true;
+  }
+
+  // central isDirty derived for reuse
+  const isDirty = $derived(
+    draftDebtorName.trim() !== debtorName.trim() ||
+      (debtorPhone ?? '') !== draftDebtorPhone.trim() ||
+      draftPaid !== (sale.status === 'delivered') ||
+      draftItems.some((it, idx) => {
+        const orig = sale.items[idx];
+        if (!orig) return true;
+        return (
+          it.product !== orig.product ||
+          Number(it.quantity) !== orig.quantity ||
+          Number(it.unitPrice) !== orig.unitPrice
+        );
+      }) ||
+      sale.items.length !== draftItems.length,
+  );
+
+  function restoreDraft() {
+    if (!isDirty) return;
+    draftItems = sale.items.map((it) => ({
+      id: it.id,
+      product: it.product,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+    }));
+    draftPaid = sale.status === 'delivered';
+    draftDebtorName = debtorName;
+    draftDebtorPhone = debtorPhone ?? '';
+  }
+
+  // Pending amount with tiny tolerance to avoid floating point issues hiding the button
+  const pendingRaw = $derived(remainingAmount(sale));
+  const pendingAmount = $derived(pendingRaw > 0.0001 ? pendingRaw : 0);
+  const normalizedPhone = $derived(debtorPhone ? replaceNumberPhone(debtorPhone) : '');
+  // Validación para modal de edición: requerimos nombre y cada item válido
+  const isEditValid = $derived(
+    draftDebtorName.trim().length > 0 &&
+      draftItems.length > 0 &&
+      draftItems.every(
+        (it) =>
+          it.product.trim().length > 0 && Number(it.quantity) > 0 && Number(it.unitPrice) >= 0,
+      ),
+  );
+
+  function greeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
+  function buildWhatsAppMessage(): string {
+    if (!pendingAmount) return '';
+    const usd = currency(pendingAmount);
+    const bs = bolivarRate ? (pendingAmount * bolivarRate).toFixed(2) : null;
+    const namePart = debtorName ? ` ${debtorName.trim()}` : '';
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(
+      today.getMonth() + 1,
+    ).padStart(2, '0')}/${today.getFullYear()}`;
+    let msg = `${greeting()}${namePart}. Le escribo el ${dateStr} para recordarle que mantiene un saldo pendiente de ${usd}`;
+    if (bs) msg += ` (Bs ${bs})`;
+    return msg;
+  }
+
+  const whatsappUrl = $derived(
+    !normalizedPhone || !pendingAmount
+      ? ''
+      : (() => {
+          const text = encodeURIComponent(buildWhatsAppMessage());
+          return `https://wa.me/${normalizedPhone.replace('+', '')}?text=${text}`;
+        })(),
+  );
 </script>
 
-<article class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+<article
+  class={`anim-fade-in rounded-xl border bg-white p-4 shadow-sm transition-colors ${
+    editing && isDesktop ? 'border-blue-500 ring-2 ring-blue-200' : 'border-zinc-200'
+  }`}
+>
   <header class="flex items-center justify-between">
     <div>
-      <h3 class="text-sm font-semibold">{debtorName}</h3>
+      <h3 class="flex items-center gap-2 text-sm font-semibold">
+        <span>{debtorName}</span>
+        {#if editing && isDesktop}
+          <span
+            class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-blue-600"
+            >EDITANDO</span
+          >
+        {/if}
+      </h3>
       <p class="text-xs text-zinc-500">
         {new Date(sale.createdAt).toLocaleString()}
       </p>
@@ -179,8 +269,8 @@
     </div>
   </header>
 
-  {#if editing}
-    <div class="mt-3 space-y-2 text-sm">
+  {#if editing && !isDesktop}
+    <div class="anim-scale-in mt-3 space-y-2 text-sm">
       <div class="grid gap-1">
         <label class="text-xs text-zinc-600" for={`debtor-${sale.id}`}>Cliente</label>
         <input
@@ -262,7 +352,12 @@
       </div>
     </div>
   {:else}
-    <div class="mt-3 text-sm">
+    <div class="relative mt-3 text-sm">
+      {#if editing && isDesktop}
+        <div
+          class="pointer-events-none absolute inset-0 rounded-lg bg-white/60 backdrop-blur-[2px] transition-opacity"
+        ></div>
+      {/if}
       <ul class="space-y-1">
         {#each sale.items as it}
           <li class="flex flex-col">
@@ -317,50 +412,51 @@
     </div>
     <div class="flex flex-wrap justify-end gap-2 sm:flex-nowrap sm:items-center">
       {#if sale.status === 'pending' && !editing}
-        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-stretch sm:gap-3">
           {#if !addingPayment}
             <button
               type="button"
-              class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] sm:w-auto"
+              class="inline-flex w-full min-w-[110px] items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] sm:w-auto"
               onclick={startAddPayment}>Abonar</button
             >
           {:else}
-            <div class="flex w-full items-center gap-1 sm:w-auto">
+            <div class="flex w-full items-center gap-2 sm:w-auto">
               <input
                 type="number"
                 min="0.01"
                 step="0.01"
-                class="w-full max-w-[110px] rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+                class="w-full max-w-[120px] rounded-lg border border-zinc-300 px-2 py-1 text-xs"
                 placeholder="$"
                 bind:value={partialAmount}
               />
               <button
                 type="button"
-                class="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500"
+                class="h-8 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white hover:bg-emerald-500"
                 onclick={confirmAddPayment}
                 disabled={!partialAmount}>OK</button
               >
               <button
                 type="button"
-                class="rounded-lg bg-zinc-200 px-2 py-1 text-xs font-medium hover:bg-zinc-300"
+                class="h-8 rounded-lg bg-zinc-200 px-3 text-xs font-medium hover:bg-zinc-300"
                 onclick={cancelAddPayment}>✕</button
               >
             </div>
           {/if}
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98] sm:w-auto"
+            class="inline-flex w-full min-w-[130px] items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98] sm:w-auto"
             onclick={() => onMarkDelivered(sale.id)}>Marcar pagado</button
           >
         </div>
       {/if}
-      {#if debtorPhone && !editing}
+      {#if !editing && normalizedPhone && pendingAmount}
         <a
-          class="inline-flex items-center justify-center"
-          href={`https://wa.me/${replaceNumberPhone(debtorPhone)}`}
+          class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 hover:bg-green-100"
+          href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="WhatsApp"
+          title="Enviar recordatorio por WhatsApp"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="23.82" height="24" viewBox="0 0 256 258">
             <defs>
@@ -391,3 +487,139 @@
     </div>
   </footer>
 </article>
+
+{#if editing && isDesktop}
+  <!-- Dirty check -->
+  {#key sale.id + String(editing)}
+    {#snippet editModal({ close }: { close: () => void })}
+      <header class="mb-4 flex items-center justify-between">
+        <h2 id={`edit-title-${sale.id}`} class="text-base font-semibold">Editar venta</h2>
+        <button
+          type="button"
+          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"
+          aria-label="Cerrar"
+          onclick={() => close()}>✕</button
+        >
+      </header>
+      <div class="space-y-4 text-sm">
+        <div class="grid gap-1">
+          <label class="text-xs text-zinc-600" for={`debtor-${sale.id}`}>Cliente</label>
+          <input
+            id={`debtor-${sale.id}`}
+            class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            bind:value={draftDebtorName}
+          />
+        </div>
+        <div class="grid gap-1">
+          <label class="text-xs text-zinc-600" for={`debtor-phone-${sale.id}`}>Teléfono</label>
+          <input
+            id={`debtor-phone-${sale.id}`}
+            class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            placeholder="Opcional"
+            bind:value={draftDebtorPhone}
+          />
+        </div>
+        {#if sale.status !== 'pending'}
+          <div class="flex items-center gap-2 pt-1">
+            <input id={`paid-${sale.id}`} type="checkbox" class="size-4" bind:checked={draftPaid} />
+            <label class="text-sm" for={`paid-${sale.id}`}>Pagado</label>
+          </div>
+        {/if}
+        <div class="space-y-3">
+          {#each draftItems as it, i (it.id)}
+            <div
+              class="grid gap-2 rounded-lg bg-zinc-50 p-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:bg-transparent md:p-0"
+            >
+              <div class="min-w-[160px]">
+                <input
+                  class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  bind:value={draftItems[i].product}
+                  placeholder="Producto"
+                />
+              </div>
+              <input
+                class="w-24 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                type="number"
+                min="1"
+                bind:value={draftItems[i].quantity}
+              />
+              <input
+                class="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                type="number"
+                min="0"
+                step="0.01"
+                bind:value={draftItems[i].unitPrice}
+              />
+              <span class="w-auto text-right text-xs text-zinc-600 md:w-24 md:self-center">
+                {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
+              </span>
+              <button
+                type="button"
+                class="text-xs text-red-600 hover:underline disabled:opacity-40"
+                aria-label="Eliminar"
+                onclick={() => removeDraftItem(it.id)}
+                disabled={draftItems.length === 1}>✕</button
+              >
+            </div>
+          {/each}
+          <div class="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-300"
+              onclick={addDraftItem}>Añadir producto</button
+            >
+            <span class="text-xs text-zinc-600">Total: <strong>{currency(draftTotal)}</strong></span
+            >
+          </div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3 pt-4">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!isDirty}
+            onclick={restoreDraft}>Restaurar</button
+          >
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-300"
+            onclick={close}>Cancelar</button
+          >
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            class:bg-zinc-900={isEditValid}
+            disabled={!isEditValid}
+            onclick={() => {
+              if (!isEditValid) return;
+              saveEdit();
+              close();
+            }}>Guardar</button
+          >
+        </div>
+      </div>
+    {/snippet}
+    <ModalPortal
+      labelledBy={`edit-title-${sale.id}`}
+      beforeClose={() => {
+        const dirty =
+          draftDebtorName.trim() !== debtorName.trim() ||
+          (debtorPhone ?? '') !== draftDebtorPhone.trim() ||
+          draftPaid !== (sale.status === 'delivered') ||
+          draftItems.some((it, idx) => {
+            const orig = sale.items[idx];
+            if (!orig) return true;
+            return (
+              it.product !== orig.product ||
+              Number(it.quantity) !== orig.quantity ||
+              Number(it.unitPrice) !== orig.unitPrice
+            );
+          }) ||
+          sale.items.length !== draftItems.length;
+        if (dirty && !confirm('Hay cambios sin guardar. ¿Cerrar de todos modos?')) return false;
+      }}
+      onClose={cancelEdit}
+      size="lg"
+      children={editModal}
+    />
+  {/key}
+{/if}
