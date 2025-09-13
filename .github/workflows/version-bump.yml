@@ -21,8 +21,10 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install deps
-        run: npm ci
+      - name: Install deps (fallback a npm install)
+        run: |
+          echo "Usando npm install (lock desincronizado rompe npm ci)."
+          npm install --no-audit --no-fund
 
       - name: Determine bump type
         id: decide
