@@ -161,3 +161,28 @@ npm install
 Hook: `.husky/commit-msg` → ejecuta el bump, enmienda y crea tag.
 
 Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`.
+
+### Workflow GitHub: Auto bump en main
+
+Archivo: `.github/workflows/version-bump.yml`.
+
+Cuando haces push a `main`:
+
+1. Lee el último mensaje de commit.
+2. Decide bump (mismas reglas básicas feat/fix/perf/breaking).
+3. Si aplica, incrementa `package.json`, crea commit `ci: bump version to X.Y.Z` y tag `vX.Y.Z`.
+4. Empuja cambios + tags.
+
+Esto asegura que aunque un commit pase sin hook local, el repo central mantenga versión y tag consistentes.
+
+Desactivar: elimina el workflow o limita las ramas en el YAML.
+
+### Toast de actualización interactivo
+
+Cuando se activa un nuevo Service Worker:
+
+- Aparece un panel inferior con el mensaje: “Se ha detectado una nueva versión…”.
+- Botón “Actualizar ahora” fuerza `window.location.reload()`.
+- Botón “Más tarde” cierra el panel (seguirás con la versión vieja hasta recargar o nueva activación).
+
+Cambiar estilos: editar `src/lib/core/toast.ts` (clases Tailwind).

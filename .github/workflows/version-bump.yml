@@ -1,0 +1,65 @@
+name: Version Bump & Tag
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Determine bump type
+        id: decide
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit: $LAST_COMMIT_MSG"
+          TYPE=""
+          if echo "$LAST_COMMIT_MSG" | grep -qi 'breaking change'; then TYPE=major; fi
+          if echo "$LAST_COMMIT_MSG" | grep -qE '^[a-zA-Z]+!:'; then TYPE=major; fi
+          if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^feat(\(|:)'; then TYPE=minor; fi
+          if [ -z "$TYPE" ] && echo "$LAST_COMMIT_MSG" | grep -qE '^(fix|perf|release)(\(|:)'; then TYPE=patch; fi
+          if [ -z "$TYPE" ]; then echo "No bump"; echo "type=none" >> $GITHUB_OUTPUT; exit 0; fi
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
+      - name: Bump version
+        if: steps.decide.outputs.type != 'none'
+        run: |
+          node -e "
+          const fs=require('fs');
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+          const type='${{ steps.decide.outputs.type }}';
+          const [MA,MI,PA]=pkg.version.split('.').map(n=>parseInt(n,10)||0);
+          let next= pkg.version;
+          if(type==='major') next=`${MA+1}.0.0`; else if(type==='minor') next=`${MA}.${MI+1}.0`; else if(type==='patch') next=`${MA}.${MI}.${PA+1}`;
+          pkg.version=next;
+          fs.writeFileSync('package.json', JSON.stringify(pkg,null,2)+'\n');
+          console.log('Version ->', next);
+          "
+      - name: Commit & tag
+        if: steps.decide.outputs.type != 'none'
+        run: |
+          NEXT_VERSION=$(node -p "require('./package.json').version")
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add package.json
+          git commit -m "ci: bump version to $NEXT_VERSION"
+          git tag -a v$NEXT_VERSION -m "Release v$NEXT_VERSION"
+          git push --follow-tags
+      - name: Output skipped
+        if: steps.decide.outputs.type == 'none'
+        run: echo "No semantic bump required."

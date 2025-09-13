@@ -35,11 +35,10 @@ if ('serviceWorker' in navigator) {
             }
           });
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            // Mostrar toast de "Actualizando…" y recargar tras breve delay para que el usuario lo vea
-            showUpdatingToast(version);
-            setTimeout(() => {
+            // Mostrar toast interactivo para que el usuario decida cuándo recargar
+            showUpdatingToast(version, () => {
               window.location.reload();
-            }, 900); // suficiente para leer el toast
+            });
           });
         })
         .catch((err) => console.warn('SW registration failed', err));
