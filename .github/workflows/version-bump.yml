@@ -40,24 +40,25 @@ jobs:
           echo "type=$TYPE" >> $GITHUB_OUTPUT
       - name: Bump version
         if: steps.decide.outputs.type != 'none'
-        env:
-          BUMP_TYPE: ${{ steps.decide.outputs.type }}
         run: |
-          node <<'EOF'
-const fs = require('fs');
-const type = process.env.BUMP_TYPE;
-if(!type){ console.error('No bump type provided'); process.exit(1); }
-const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
-const [MA,MI,PA] = pkg.version.split('.').map(n=>parseInt(n,10)||0);
-let next = pkg.version;
-if (type === 'major') next = `${MA+1}.0.0`;
-else if (type === 'minor') next = `${MA}.${MI+1}.0`;
-else if (type === 'patch') next = `${MA}.${MI}.${PA+1}`;
-if(next === pkg.version){ console.log('No version change'); process.exit(0); }
-pkg.version = next;
-fs.writeFileSync('package.json', JSON.stringify(pkg,null,2)+'\n');
-console.log('Version ->', next);
+          TYPE='${{ steps.decide.outputs.type }}'
+          CURR=$(jq -r .version package.json)
+          IFS='.' read -r MA MI PA <<EOF
+$CURR
 EOF
+          if [ "$TYPE" = major ]; then
+            MA=$((MA+1)); MI=0; PA=0
+          elif [ "$TYPE" = minor ]; then
+            MI=$((MI+1)); PA=0
+          else
+            PA=$((PA+1))
+          fi
+          NEXT="$MA.$MI.$PA"
+          if [ "$NEXT" = "$CURR" ]; then
+            echo "No version change"; exit 0
+          fi
+          tmp=$(mktemp); jq --arg v "$NEXT" '.version=$v' package.json > "$tmp" && mv "$tmp" package.json
+          echo "Version -> $NEXT"
       - name: Commit & tag
         if: steps.decide.outputs.type != 'none'
         run: |
