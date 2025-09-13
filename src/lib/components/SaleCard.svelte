@@ -270,14 +270,6 @@
               <span class="text-zinc-700">{it.product} × {it.quantity}</span>
               <span class="font-medium">{currency(it.unitPrice * it.quantity)}</span>
             </div>
-            {#if bolivarRate}
-              <div class="flex justify-between text-[10px] text-zinc-500">
-                <span class="opacity-0">≈</span>
-                <span>
-                  Bs {(it.unitPrice * it.quantity * bolivarRate).toFixed(2)}
-                </span>
-              </div>
-            {/if}
           </li>
         {/each}
       </ul>
@@ -287,7 +279,14 @@
   <footer class="mt-3 flex items-center justify-between">
     <div class="space-y-0.5 text-xs text-zinc-600">
       <div>
-        Total: <span class="font-semibold text-zinc-900">{currency(sale.total)}</span>
+        Total: <span class="font-semibold text-zinc-900">
+          {currency(sale.total)}
+        </span>
+        {#if sale.total && bolivarRate}
+          <span class="ml-1 text-[10px] text-zinc-500"
+            >(Bs {(sale.total * bolivarRate).toFixed(2)})
+          </span>
+        {/if}
       </div>
       {#if sale.paid}
         <div>
@@ -309,9 +308,7 @@
           {/if}
         </div>
       {/if}
-      {#if bolivarRate}
-        <div class="text-[10px] text-zinc-500">≈ Bs {(sale.total * bolivarRate).toFixed(2)}</div>
-      {/if}
+
       {#if sale.status === 'pending'}
         • {daysSince(sale.createdAt)} días pendiente de pago
       {:else if sale.deliveredAt}

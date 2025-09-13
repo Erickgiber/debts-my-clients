@@ -50,10 +50,6 @@
     await exportPendingToPDF(status);
   }
 
-  const totalPendingAmount = $derived(
-    status.sales.filter((s) => s.status !== 'delivered').reduce((sum, s) => sum + s.total, 0),
-  );
-
   function onNewSale(form: NewSaleForm) {
     const debtor = upsertDebtor(status, form.debtorName, form.phone, form.notes);
     const items = form.items.map((it) => ({
@@ -213,7 +209,10 @@
 
   <div class="mx-auto flex max-w-lg items-center gap-2 px-4 pt-2 text-xs text-zinc-600">
     {#if loadingRate}
-      <span>Cargando tasa Bs...</span>
+      <div class="flex items-center gap-2">
+        <span>Cargando tasa</span>
+        <span class="inline-block animate-spin">⏳</span>
+      </div>
     {:else if bolivarRate}
       <span class="text-base font-semibold">
         Tasa oficial: 1 $ = {bolivarRate.toFixed(2)} Bs
@@ -226,9 +225,6 @@
           >
         {/if}
       </span>
-      <button type="button" class="underline" onclick={loadBolivarRate} aria-label="Actualizar tasa"
-        >↻</button
-      >
     {:else}
       <span>{rateError}</span>
       <button type="button" class="underline" onclick={loadBolivarRate}>Reintentar</button>
