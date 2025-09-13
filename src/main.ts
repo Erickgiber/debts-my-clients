@@ -1,5 +1,6 @@
 import { mount } from 'svelte';
 import { showUpdatingToast } from '$lib/core/toast';
+import { initAppVersion, APP_VERSION } from '$lib/core/version';
 import './app.css';
 import App from './App.svelte';
 
@@ -12,7 +13,12 @@ export default app;
 // Service Worker handling
 // Solo registrar el SW en producción para evitar cache en desarrollo.
 if ('serviceWorker' in navigator) {
-  const currentVersion = (import.meta as any).env.VITE_APP_VERSION || 'dev';
+  const currentVersion = initAppVersion();
+  const prevVersion = localStorage.getItem('app_version');
+  if (prevVersion !== currentVersion) {
+    localStorage.setItem('app_version', currentVersion);
+    console.info(`[version] Version actual: ${currentVersion} (previa: ${prevVersion || 'none'})`);
+  }
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
       const swUrl = `/sw.js?v=${encodeURIComponent(currentVersion)}`;
@@ -36,7 +42,7 @@ if ('serviceWorker' in navigator) {
           });
           navigator.serviceWorker.addEventListener('controllerchange', () => {
             // Mostrar toast interactivo para que el usuario decida cuándo recargar
-            showUpdatingToast(currentVersion, currentVersion, () => {
+            showUpdatingToast(prevVersion || currentVersion, currentVersion, () => {
               window.location.reload();
             });
           });

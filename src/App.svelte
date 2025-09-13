@@ -1,5 +1,6 @@
 <script lang="ts">
   import Header from '$lib/components/Header.svelte';
+  import { APP_VERSION } from '$lib/core/version';
   import NewSaleSheet from '$lib/components/NewSaleSheet.svelte';
   import NewSaleModal from '$lib/components/NewSaleModal.svelte';
   import SaleCard from '$lib/components/SaleCard.svelte';
@@ -507,6 +508,11 @@
     />
   {/if}
   <!-- Créditos / autor: colocado fijo y discreto -->
+  <div
+    class="fixed right-3 bottom-[34px] z-30 text-[10px] text-zinc-500 opacity-70 select-none print:hidden"
+  >
+    v{APP_VERSION}
+  </div>
   <div class="fixed right-3 bottom-2 z-30 select-none print:hidden">
     <a
       href="https://erickgiber.vercel.app"

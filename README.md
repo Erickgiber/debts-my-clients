@@ -158,9 +158,24 @@ Instalación Husky (ya configurado tras `npm install`):
 npm install
 ```
 
-Hook: `.husky/commit-msg` → ejecuta el bump, enmienda y crea tag.
+Hook: `.husky/commit-msg` → ejecuta el bump, enmienda y crea tag. Si el mensaje NO provoca bump (por ejemplo `refactor:`) el hook fuerza por defecto un bump `patch` usando `--force ${DEFAULT_BUMP:-patch}` para garantizar que cada commit en `main` avance la versión. Puedes sobrescribir exportando temporalmente `DEFAULT_BUMP=minor` o `DEFAULT_BUMP=major` antes del commit:
 
-Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`.
+```powershell
+$env:DEFAULT_BUMP="minor"; git commit -m "docs: actualizar readme"; Remove-Item Env:\DEFAULT_BUMP
+```
+
+Si quieres desactivar el force patch, edita `.husky/commit-msg` y elimina `--force ${DEFAULT_BUMP:-patch}`.
+
+Visualización de versión dentro de la app:
+
+Se añadió `src/lib/core/version.ts` que expone `APP_VERSION`.
+
+- En producción proviene de `VITE_APP_VERSION`.
+- En desarrollo intenta leer `package.json` (fetch) y añade sufijo `-dev`.
+
+`App.svelte` ahora muestra un badge discreto (abajo a la derecha) con `v<versión>` y se registra en `localStorage` la versión previa para comparar avisos de actualización.
+
+Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`, y borra el uso de `version.ts` y el badge en `App.svelte`.
 
 ### Workflow GitHub: Auto bump en main
 

@@ -51,9 +51,16 @@ function decideBump(m) {
   return null; // sin cambio
 }
 
-const bump = decideBump(msg);
+let bump = decideBump(msg);
 if (!bump) {
-  process.exit(0);
+  // Permitir forzar un bump por variable de entorno DEFAULT_BUMP (major|minor|patch)
+  const forced = process.env.DEFAULT_BUMP;
+  if (forced && ['major', 'minor', 'patch'].includes(forced)) {
+    bump = forced;
+    console.log(`[semver-bump] DEFAULT_BUMP aplicado: ${bump}`);
+  } else {
+    process.exit(0);
+  }
 }
 
 const pkgPath = resolve(process.cwd(), 'package.json');
