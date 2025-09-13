@@ -222,3 +222,34 @@ Cuando se activa un nuevo Service Worker:
 - Botón “Más tarde” cierra el panel (seguirás con la versión vieja hasta recargar o nueva activación).
 
 Cambiar estilos: editar `src/lib/core/toast.ts` (clases Tailwind).
+
+### CHANGELOG automático
+
+Se genera/actualiza `CHANGELOG.md` automáticamente en cada bump de versión del workflow CI (`version-bump.yml`).
+
+Reglas de clasificación (convencional commits simplificado):
+
+- `feat:` → sección Features
+- `fix:` → sección Fixes
+- `perf:` → sección Performance
+- `BREAKING CHANGE:` en cuerpo o `tipo!:` en encabezado → sección BREAKING CHANGES
+- Otros tipos → sección Other
+
+Fuente: script `scripts/update-changelog.mjs`:
+
+Flujo:
+
+1. Obtiene el último tag (`git describe --tags --abbrev=0`).
+2. Lista commits desde ese tag hasta `HEAD`.
+3. Agrupa por tipo y genera una nueva sección `## <versión> - YYYY-MM-DD` al inicio del archivo.
+4. Si no hay cambios clasificados, añade `_No changes._`.
+
+Uso manual local (opcional):
+
+```powershell
+node scripts/update-changelog.mjs
+```
+
+Si deseas excluir ciertos tipos (ej. `chore:`) del bloque Other, podrías editar `classify()` en el script.
+
+Para futuras mejoras: enlazar cada bullet a la vista del commit en GitHub (`- desc (abcdef1)`).

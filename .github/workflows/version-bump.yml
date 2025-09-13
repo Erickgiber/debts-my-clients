@@ -59,13 +59,18 @@ EOF
           fi
           tmp=$(mktemp); jq --arg v "$NEXT" '.version=$v' package.json > "$tmp" && mv "$tmp" package.json
           echo "Version -> $NEXT"
+
+      - name: Generate changelog
+        if: steps.decide.outputs.type != 'none'
+        run: |
+          node scripts/update-changelog.mjs
       - name: Commit & tag
         if: steps.decide.outputs.type != 'none'
         run: |
           NEXT_VERSION=$(node -p "require('./package.json').version")
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add package.json
+          git add package.json CHANGELOG.md
           git commit -m "ci: bump version to $NEXT_VERSION" || echo "Skip commit (no changes)"
           git tag -a v$NEXT_VERSION -m "Release v$NEXT_VERSION" || echo "Tag ya existe"
           git push --follow-tags
