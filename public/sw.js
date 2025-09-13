@@ -42,13 +42,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
-  // Estrategia: cache-first para core y navigation fallback
+
+  // Navegaciones (documentos HTML): network-first para detectar nuevas versiones rápidamente
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put('/index.html', copy))
+            .catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match('/index.html')),
+    );
+    return;
+  }
+
+  // Otros recursos: cache-first con actualización en segundo plano
   event.respondWith(
     caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
+      const fetchPromise = fetch(req)
         .then((res) => {
-          // Guardar copia en cache (ignorar si error)
           const copy = res.clone();
           caches
             .open(CACHE_NAME)
@@ -56,11 +72,8 @@ self.addEventListener('fetch', (event) => {
             .catch(() => {});
           return res;
         })
-        .catch(() => {
-          if (req.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-        });
+        .catch(() => cached);
+      return cached || fetchPromise;
     }),
   );
 });

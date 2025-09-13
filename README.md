@@ -72,11 +72,19 @@ La app incluye soporte PWA para instalación desde el navegador.
 
 ### Actualización automática forzada (Versionado SW)
 
-Cada build inyecta una variable `import.meta.env.VITE_APP_VERSION` construida con:
+Cada build genera un archivo `.env.production.local` (ignorando por git) con la variable `VITE_APP_VERSION` construida así:
 
-`<hash-corto-git>-<timestamp YYYYMMDDHHMMSS>`
+`<version-package.json>-<hash-git-corto>-<timestamp YYYYMMDDHHMMSS>`
 
-Esta versión se añade como query param al registrar el Service Worker: `sw.js?v=HASH-TIME`.
+Ejemplo: `0.1.3-a1b2c3d-20250913174522`.
+
+El script `scripts/generate-version.mjs` se ejecuta automáticamente vía `npm run build` (hook `prebuild`). Si por alguna razón quieres regenerar manualmente solo la versión:
+
+```powershell
+node scripts/generate-version.mjs
+```
+
+La versión se añade como query param al registrar el Service Worker: `sw.js?v=<VITE_APP_VERSION>`.
 
 El propio `sw.js`:
 
@@ -93,11 +101,12 @@ Resultado: al desplegar (nuevo commit + build) todos los clientes obtienen la nu
 3. El navegador detecta hash nuevo (URL diferente del SW) y descarga el SW actualizado.
 4. Nuevo SW instala, limpia caches viejos, y se activa.
 5. La app recarga automáticamente con los assets frescos.
+6. Estrategia de navegación: `index.html` ahora es network-first (si hay conexión) para detectar builds nuevas inmediatamente y solo cae a cache si estás offline.
 
 #### Notas
 
 - En desarrollo (`npm run dev`) se desregistran SW previos y se borran caches (`ventas-cache*`).
-- Si no hay git disponible (ej: build en CI shallow) se usa `dev` como hash + timestamp.
+- Si no hay git disponible (ej: build en CI shallow) se usa `nogit` como hash.
 - Puedes mostrar la versión dentro de la UI leyendo `import.meta.env.VITE_APP_VERSION`.
 
 Ejemplo para mostrar versión en un componente Svelte:
