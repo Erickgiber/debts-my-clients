@@ -30,4 +30,29 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Separar dependencias pesadas en chunks dedicados.
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('jspdf') || id.includes('jspdf-autotable')) {
+              return 'pdf';
+            }
+            if (id.includes('@capacitor')) {
+              return 'capacitor';
+            }
+            if (id.includes('svelte')) {
+              return 'svelte-vendor';
+            }
+            // default vendor chunk
+            return 'vendor';
+          }
+        },
+      },
+    },
+    // Podríamos subir un poco el límite para evitar falsos positivos tras el split,
+    // pero mantenemos relativamente estricto.
+    chunkSizeWarningLimit: 600,
+  },
 });

@@ -42,7 +42,7 @@
   // Detect desktop
   $effect(() => {
     if (typeof window === 'undefined') return;
-    const mq = window.matchMedia('(min-width: 1024px)');
+    const mq = window.matchMedia('(min-width: 1140px)');
     const update = () => (isDesktop = mq.matches);
     update();
     mq.addEventListener('change', update);

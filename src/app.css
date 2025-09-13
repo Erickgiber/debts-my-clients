@@ -77,6 +77,10 @@
   font-style: italic;
   font-display: swap;
 }
+/* Redefinimos breakpoint lg a 1140px vía token Tailwind v4 */
+@theme {
+  --breakpoint-lg: 1140px;
+}
 @import 'tailwindcss';
 
 @layer utilities {
@@ -89,7 +93,7 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1140px) {
   :root {
     --app-header-height: 64px;
   }

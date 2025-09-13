@@ -162,14 +162,17 @@
   const deliveredSalesCount = $derived(status.sales.filter((s) => s.status === 'delivered').length);
 
   let isDesktop = $state(false);
+  // Desktop ahora sólo si ancho >= 1140px para no activar en tablets grandes u horizontales
   $effect(() => {
     if (typeof window === 'undefined') return;
-    const mql = window.matchMedia('(min-width: 1024px)');
+    const mql = window.matchMedia('(min-width: 1140px)');
     const update = () => (isDesktop = mql.matches);
     update();
     mql.addEventListener('change', update);
     return () => mql.removeEventListener('change', update);
   });
+
+  $inspect(isDesktop);
 
   // Keyboard shortcuts
   $effect(() => {

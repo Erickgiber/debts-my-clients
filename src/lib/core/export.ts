@@ -1,6 +1,8 @@
 import type { AppState } from './types';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// NOTE: Se usa importación dinámica de jspdf y autotable para evitar que el bundle principal
+// incluya estas librerías pesadas (pdf sólo se genera bajo demanda).
+// Capacitor APIs siguen estáticas (son pequeñas comparado a jsPDF) pero podrían también
+// cargarse dinámicamente si fuese necesario.
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -8,6 +10,11 @@ import { Share } from '@capacitor/share';
 const fmtDate = (iso: string) => new Date(iso).toLocaleString();
 
 export async function exportPendingToPDF(state: AppState) {
+  // Carga diferida de dependencias pesadas.
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
 
   const title = 'Pagos pendientes';
