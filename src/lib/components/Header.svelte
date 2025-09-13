@@ -23,7 +23,7 @@
 </script>
 
 <header class="sticky top-0 z-10 border-b border-zinc-200 bg-white/70 backdrop-blur">
-  <div class="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
+  <div class="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3">
     <div class="flex-1">
       <h1 class="text-lg font-semibold tracking-tight">Gestor de ventas</h1>
       <p class="space-y-0.5 text-xs text-zinc-500">
@@ -34,36 +34,92 @@
           <span class="text-[10px] text-zinc-400">
             ≈ Bs {(totalPendingRaw * bolivarRate).toFixed(2)}
             {#if bolivarRateUpdatedAt}
-              <span class="ml-1 opacity-60">
-                {new Date(bolivarRateUpdatedAt).toLocaleTimeString([], {
+              <span class="ml-1 opacity-60"
+                >{new Date(bolivarRateUpdatedAt).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
-                })}
-              </span>
+                })}</span
+              >
             {/if}
           </span>
         {/if}
       </p>
     </div>
-    <!-- <button
-      class="inline-flex items-center justify-center rounded-xl bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-200 active:scale-[.98]"
-      onclick={onExport}
-      aria-label="Exportar pendientes a PDF"
-      type="button">PDF</button
-    > -->
 
-    <button
-      class="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-2.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 active:scale-[.98]"
-      onclick={onAdd}
-      aria-label="Nueva venta"
-      type="button"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <path
-          fill="currentColor"
-          d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2"
-        />
-      </svg>
-    </button>
+    <div class="group relative hidden md:inline-block">
+      <button
+        class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-gradient-to-b from-white/90 to-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm ring-0 shadow-zinc-950/5 transition duration-150 hover:border-zinc-300 hover:from-white hover:to-zinc-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] active:shadow-inner md:cursor-pointer"
+        onclick={onExport}
+        aria-label="Exportar lista de deudores en PDF"
+        aria-describedby="pdf-export-tip"
+        type="button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          class="text-zinc-600 transition group-hover:text-zinc-700"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M7 2.75A2.75 2.75 0 0 0 4.25 5.5v13A2.75 2.75 0 0 0 7 21.25h10A2.75 2.75 0 0 0 19.75 18.5v-9.94c0-.46-.183-.9-.51-1.23l-4.57-4.56a1.75 1.75 0 0 0-1.24-.52zM13.5 3.94c.15.05.29.13.4.25l4.47 4.47a.75.75 0 0 1 .22.53H14A.5.5 0 0 1 13.5 8.7zM8.75 12A.75.75 0 0 1 9.5 11.25h5a.75.75 0 0 1 0 1.5h-5A.75.75 0 0 1 8.75 12m0 3A.75.75 0 0 1 9.5 14.25h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75"
+          />
+        </svg>
+        <span class="text-[13px] font-semibold tracking-tight">PDF</span>
+        <span
+          class="relative -mr-1 inline-flex h-1.5 w-1.5 overflow-hidden rounded-full bg-gradient-to-br from-rose-400 to-fuchsia-500 opacity-60 shadow-[0_0_0_1px_rgba(0,0,0,0.08)] group-hover:opacity-100"
+        ></span>
+      </button>
+      <div
+        id="pdf-export-tip"
+        role="tooltip"
+        class="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+      >
+        Exportar lista de deudores en PDF
+        <span class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-zinc-900"
+        ></span>
+      </div>
+    </div>
+
+    <div class="group relative inline-block">
+      <button
+        class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-gradient-to-b from-white/90 to-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm ring-0 shadow-zinc-950/5 transition duration-150 hover:border-zinc-300 hover:from-white hover:to-zinc-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] active:shadow-inner md:cursor-pointer"
+        onclick={onAdd}
+        aria-label="Nueva venta"
+        aria-describedby="new-sale-tip"
+        type="button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          class="text-zinc-600 transition group-hover:text-zinc-700"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2"
+          />
+        </svg>
+        <span class="hidden text-[13px] font-semibold tracking-tight md:inline-block"
+          >Nueva venta</span
+        >
+        <span
+          class="relative -mr-1 hidden h-1.5 w-1.5 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 opacity-70 shadow-[0_0_0_1px_rgba(0,0,0,0.15)] transition group-hover:opacity-100 md:inline-block"
+        ></span>
+      </button>
+      <div
+        id="new-sale-tip"
+        role="tooltip"
+        class="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+      >
+        Crear nueva venta
+        <span class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-zinc-900"
+        ></span>
+      </div>
+    </div>
   </div>
 </header>

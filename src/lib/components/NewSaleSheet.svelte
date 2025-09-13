@@ -69,7 +69,7 @@
       aria-label="Cerrar"
     ></button>
     <aside
-      class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl"
+      class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl lg:max-w-xl lg:p-6"
     >
       <header class="flex items-center justify-between gap-2">
         <h2 class="text-base font-semibold">Nueva venta</h2>
