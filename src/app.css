@@ -85,6 +85,10 @@
   }
 }
 
+body {
+  overflow-x: hidden;
+}
+
 :root {
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
