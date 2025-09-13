@@ -119,11 +119,11 @@ Ejemplo para mostrar versión en un componente Svelte:
 <footer class="text-xs opacity-60">v {version}</footer>
 ```
 
-### Versionado semántico automático (pre-commit → bump en mismo commit)
+### Versionado semántico automático (commit-msg + tags)
 
-Se incrementa `package.json#version` antes de finalizar el commit usando un hook `pre-commit`.
+El hook `commit-msg` aplica bump semántico, enmienda el commit y genera un tag `vX.Y.Z`.
 
-Herramienta: `scripts/semver-bump.mjs` + hook `.husky/pre-commit`.
+Herramienta: `scripts/semver-bump.mjs` + hook `.husky/commit-msg`.
 
 Reglas:
 
@@ -141,14 +141,16 @@ Ejemplos:
 | `feat!: reescritura estructura datos` | 2.0.0           |
 | `refactor: limpiar utils`             | 1.2.3           |
 
-Limitaciones / notas:
+Notas:
 
-1. Si el mensaje aún no se ha escrito (porque no usaste `-m`) el script puede no inferir el cambio correcto (toma último commit). Recomendado: usar `git commit -m "feat: ..."`.
-2. Puedes forzar un tipo específico manualmente:
+1. Usa `git commit -m "feat: ..."` para asegurar el bump; si abres editor igual funciona (lee el archivo del mensaje).
+2. Para forzar un bump manual:
 
 ```powershell
 node scripts/semver-bump.mjs .git/COMMIT_EDITMSG --force minor
 ```
+
+3. Se crea tag anotado `v<version>` si no existe; exporta `PUSH_TAG=1` para hacer `git push --follow-tags` automáticamente.
 
 Instalación Husky (ya configurado tras `npm install`):
 
@@ -156,6 +158,6 @@ Instalación Husky (ya configurado tras `npm install`):
 npm install
 ```
 
-Hook: `.husky/pre-commit` → ejecuta el bump y enmienda en el mismo commit si aplica.
+Hook: `.husky/commit-msg` → ejecuta el bump, enmienda y crea tag.
 
-Si no deseas este comportamiento, elimina `.husky/pre-commit` y la dependencia `husky`.
+Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`.

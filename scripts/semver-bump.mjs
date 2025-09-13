@@ -1,12 +1,16 @@
 #!/usr/bin/env node
-// Bump de versión semántico basado en el mensaje de commit.
+// Bump de versión semántico (hook commit-msg)
 // Reglas:
-//  - Mensaje que contiene 'BREAKING CHANGE' o usa '!' después del tipo => major
-//  - Prefijos: feat => minor
-//  - fix, perf => patch
-//  - build, chore, docs, refactor, test, ci, style => no cambia (a menos que lleven '!')
-//  - Si se pasa flag --force <tipo> obliga el bump (major|minor|patch)
-//  - Sólo se ejecuta si el hook commit-msg lo llamó con ruta del archivo del commit.
+//  - BREAKING CHANGE / !: => major
+//  - feat => minor
+//  - fix/perf/release => patch
+//  - Otros tipos: sin cambio (a menos que usen !)
+//  - --force <major|minor|patch> para sobrescribir
+// Flujo:
+//  1. Lee mensaje (archivo commit-msg)
+//  2. Decide bump; si no hay -> exit 0
+//  3. Actualiza package.json y hace amend para incluir el cambio
+//  4. Crea tag anotado vX.Y.Z (si no existe) y opcionalmente push si env PUSH_TAG=1
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -27,24 +31,12 @@ function parseArgs() {
 }
 
 const { commitMsgFile, force } = parseArgs();
-// Si estamos en pre-commit quizá no tengamos archivo de mensaje todavía; tomar HEAD commit message provisional
+if (!commitMsgFile) process.exit(0);
 let msg = '';
-if (commitMsgFile) {
-  try {
-    msg = readFileSync(commitMsgFile, 'utf8').trim();
-  } catch {
-    /* ignore */
-  }
-}
-if (!msg) {
-  try {
-    // Obtener mensaje staged usando git interpretado (si se corre en pre-commit será el último commit HEAD si es amend, o vacío si primero)
-    msg = execSync('git log -1 --pretty=%B', { stdio: ['ignore', 'pipe', 'ignore'] })
-      .toString()
-      .trim();
-  } catch {
-    /* ignore */
-  }
+try {
+  msg = readFileSync(commitMsgFile, 'utf8').trim();
+} catch {
+  process.exit(0);
 }
 if (!msg) process.exit(0);
 
@@ -77,26 +69,34 @@ pkg.version = next;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 console.log(`[semver-bump] ${current} -> ${next} (${bump})`);
 
-// Evitar bucle infinito al amendar
-if (!process.env.SEMVER_BUMP_DONE) {
-  try {
-    execSync('git add package.json', { stdio: 'ignore' });
-  } catch (e) {
-    console.warn('[semver-bump] No se pudo hacer git add package.json');
-  }
-} else {
-  process.exit(0);
+try {
+  execSync('git add package.json', { stdio: 'ignore' });
+} catch {}
+try {
+  execSync('git commit --amend --no-edit', { stdio: 'ignore' });
+  console.log('[semver-bump] Commit enmendado');
+} catch {
+  console.warn('[semver-bump] No se pudo amendar commit (quizá --no-verify).');
 }
 
-// Si se está ejecutando en commit-msg ya es tarde para incluirlo sin amend; preferimos hacer amend
+// Tagging
+const tagName = `v${next}`;
 try {
-  execSync('git commit --amend --no-edit', {
-    stdio: 'ignore',
-    env: { ...process.env, SEMVER_BUMP_DONE: '1' },
-  });
-  console.log('[semver-bump] Commit enmendado con nueva versión');
+  const existing = execSync(`git tag -l ${tagName}`, { stdio: ['ignore', 'pipe', 'ignore'] })
+    .toString()
+    .trim();
+  if (!existing) {
+    execSync(`git tag -a ${tagName} -m "Release ${tagName}"`, { stdio: 'ignore' });
+    console.log(`[semver-bump] Tag creado ${tagName}`);
+    if (process.env.PUSH_TAG === '1') {
+      try {
+        execSync(`git push --follow-tags`, { stdio: 'ignore' });
+        console.log('[semver-bump] Tags enviados (push)');
+      } catch {
+        console.warn('[semver-bump] No se pudo hacer push de tags');
+      }
+    }
+  }
 } catch (e) {
-  console.warn(
-    '[semver-bump] No se pudo amendar commit, realiza un commit manual para incluir version.',
-  );
+  console.warn('[semver-bump] Error gestionando tags');
 }
