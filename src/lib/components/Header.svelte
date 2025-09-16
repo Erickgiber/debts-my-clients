@@ -1,9 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  import { appMode, type AppMode } from '$lib/core/mode';
+  import { get } from 'svelte/store';
+
   let {
-    totalPending = 0, // formatted or raw
-    totalPendingRaw = null, // numeric base value in USD
+    totalPending = 0,
+    totalPendingRaw = null,
     totalLabel = 'Pendiente',
     onAdd,
     onExport,
@@ -11,6 +14,8 @@
     bolivarRateUpdatedAt = null,
     totalSales = 0,
     isDesktop = false,
+    mode = get(appMode),
+    onToggleMode,
   }: {
     totalPending?: string | number;
     totalPendingRaw?: number | null;
@@ -21,15 +26,42 @@
     bolivarRateUpdatedAt?: string | null;
     totalSales?: number;
     isDesktop?: boolean;
+    mode?: AppMode;
+    onToggleMode?: (next: AppMode) => void;
   } = $props();
+
+  $effect.pre(() => {
+    const unsub = appMode.subscribe((m) => (mode = m));
+    return () => unsub();
+  });
+
+  function toggleMode() {
+    const next: AppMode = mode === 'sales' ? 'debts' : 'sales';
+    appMode.set(next);
+    onToggleMode?.(next);
+  }
 </script>
 
 <header class="sticky top-0 z-10 border-b border-zinc-200 bg-white/70 backdrop-blur">
   <div class="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3">
     <div class="flex-1">
-      <h1 class="text-lg font-semibold tracking-tight">Gestor de ventas</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-lg font-semibold tracking-tight">
+          {mode === 'sales' ? 'Gestor de ventas' : 'Gestor de deudas'}
+        </h1>
+        <button
+          type="button"
+          class="rounded-full border border-zinc-300 bg-white px-2 py-1 text-[10px] font-medium text-zinc-600 hover:bg-zinc-100"
+          onclick={toggleMode}
+          aria-label="Cambiar a {mode === 'sales' ? 'deudas' : 'ventas'}"
+          >{mode === 'sales' ? 'Deudas' : 'Ventas'}</button
+        >
+      </div>
       <p class="space-y-0.5 text-xs text-zinc-500">
-        <span>Ventas: <span class="font-medium">{totalSales}</span></span><br />
+        <span
+          >{mode === 'sales' ? 'Ventas' : 'Deudas'}:
+          <span class="font-medium">{totalSales}</span></span
+        ><br />
         <span>{totalLabel}: <span class="font-medium">{totalPending}</span></span>
         {#if bolivarRate && typeof totalPendingRaw === 'number'}
           <br />
@@ -93,7 +125,7 @@
       <button
         class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-gradient-to-b from-white/90 to-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm ring-0 shadow-zinc-950/5 transition duration-150 hover:border-zinc-300 hover:from-white hover:to-zinc-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] active:shadow-inner md:cursor-pointer"
         onclick={onAdd}
-        aria-label="Nueva venta"
+        aria-label={mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
         aria-describedby="new-sale-tip"
         type="button"
       >
@@ -110,9 +142,9 @@
             d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2"
           />
         </svg>
-        <span class="hidden text-[13px] font-semibold tracking-tight md:inline-block"
-          >Nueva venta</span
-        >
+        <span class="hidden text-[13px] font-semibold tracking-tight md:inline-block">
+          {mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
+        </span>
         <span
           class="relative -mr-1 hidden h-1.5 w-1.5 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 opacity-70 shadow-[0_0_0_1px_rgba(0,0,0,0.15)] transition group-hover:opacity-100 md:inline-block"
         ></span>
@@ -123,7 +155,7 @@
           role="tooltip"
           class="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
         >
-          Crear nueva venta
+          {mode === 'sales' ? 'Crear nueva venta' : 'Registrar nueva deuda'}
           <span class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-zinc-900"
           ></span>
         </div>

@@ -3,6 +3,14 @@
   import UnsavedChangesDialog from './UnsavedChangesDialog.svelte';
   import SaleFormBase from '$lib/components/SaleFormBase.svelte';
 
+  import { appMode } from '$lib/core/mode';
+
+  let mode = $state<'sales' | 'debts'>('sales');
+  $effect.pre(() => {
+    const unsub = appMode.subscribe((m) => (mode = m));
+    return () => unsub();
+  });
+
   let {
     open = false,
     onsubmit,
@@ -54,7 +62,7 @@
       class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl lg:max-w-xl lg:p-6"
     >
       <header class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-semibold">Nueva venta</h2>
+        <h2 class="text-base font-semibold">{mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}</h2>
         <button
           type="button"
           class="grid size-8 place-content-center rounded-lg hover:bg-zinc-100"

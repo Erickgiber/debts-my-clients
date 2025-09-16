@@ -3,6 +3,13 @@
   import { currency, daysSince, remainingAmount } from '$lib/core/utils';
   import ModalPortal from '$lib/components/SaleModalPortal.svelte';
   import { showToast } from '$lib/core/toast';
+  import { appMode } from '$lib/core/mode';
+
+  let mode = $state<'sales' | 'debts'>('sales');
+  $effect.pre(() => {
+    const unsub = appMode.subscribe((m) => (mode = m));
+    return () => unsub();
+  });
 
   let {
     sale,
@@ -315,7 +322,7 @@
           type="button"
           class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98]"
           onclick={startEdit}
-          aria-label="Editar venta">Editar</button
+          aria-label={mode === 'sales' ? 'Editar venta' : 'Editar deuda'}>Editar</button
         >
       {/if}
     </div>
@@ -622,7 +629,9 @@
   {#key sale.id + String(editing)}
     {#snippet editModal({ close }: { close: () => void })}
       <header class="mb-4 flex items-center justify-between">
-        <h2 id={`edit-title-${sale.id}`} class="text-base font-semibold">Editar venta</h2>
+        <h2 id={`edit-title-${sale.id}`} class="text-base font-semibold">
+          {mode === 'sales' ? 'Editar venta' : 'Editar deuda'}
+        </h2>
         <button
           type="button"
           class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"
@@ -811,7 +820,9 @@
   {#key sale.id + '-items-modal'}
     {#snippet itemsModal({ close }: { close: () => void })}
       <header class="mb-4 flex items-center justify-between">
-        <h2 id={`items-title-${sale.id}`} class="text-base font-semibold">Productos de la venta</h2>
+        <h2 id={`items-title-${sale.id}`} class="text-base font-semibold">
+          {mode === 'sales' ? 'Productos de la venta' : 'Productos de la deuda'}
+        </h2>
         <button
           type="button"
           class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"

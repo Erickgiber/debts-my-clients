@@ -1,3 +1,21 @@
+## Sales / Debts Gestor
+
+La aplicación ahora soporta dos modos independientes: Ventas y Deudas.
+
+- Cambia entre modos con el botón "Ventas" / "Deudas" en el encabezado.
+- Cada modo usa su propio almacenamiento local:
+  - Ventas: `sales-manager-state-v1`
+  - Deudas: `debts-manager-state-v1`
+- El modo seleccionado se persiste en `app-mode-v1`.
+- Los textos de la UI (títulos, botones, formularios) se adaptan dinámicamente.
+- No se mezclan registros: puedes gestionar deudas personales sin afectar tu histórico de ventas.
+
+Limitaciones actuales:
+
+- El exportador PDF mantiene el título orientado a pagos pendientes (puedes ajustarlo si deseas una versión específica para deudas).
+
+---
+
 ## Android (Capacitor) build
 
 Requisitos previos:

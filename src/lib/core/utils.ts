@@ -1,21 +1,27 @@
 import type { AppState, Debtor, Sale, SaleItem, UUID } from './types';
+import type { AppMode } from './mode';
 
 export const uid = (): UUID =>
   (crypto?.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36)) as UUID;
 
-// Current storage key (renamed from legacy 'debts-app-state-v1').
-// Chosen English, structured name per request.
-const STORAGE_KEY = 'sales-manager-state-v1';
-// Legacy keys to migrate from (first found will be migrated then removed).
+// Claves de almacenamiento separadas por modo
+const STORAGE_KEY_SALES = 'sales-manager-state-v1';
+const STORAGE_KEY_DEBTS = 'debts-manager-state-v1';
+// Legacy keys (ventas) a migrar
 const LEGACY_STORAGE_KEYS = ['debts-app-state-v1'];
 
-export function loadState(): AppState {
+function keyForMode(mode: AppMode): string {
+  return mode === 'debts' ? STORAGE_KEY_DEBTS : STORAGE_KEY_SALES;
+}
+
+export function loadState(mode: AppMode = 'sales'): AppState {
   if (typeof localStorage === 'undefined') {
     return { debtors: [], sales: [] };
   }
   try {
+    const STORAGE_KEY = keyForMode(mode);
     // If new key already exists, use it directly.
     let raw = localStorage.getItem(STORAGE_KEY);
 
@@ -48,8 +54,9 @@ export function loadState(): AppState {
   }
 }
 
-export function saveState(state: AppState) {
+export function saveState(state: AppState, mode: AppMode = 'sales') {
   try {
+    const STORAGE_KEY = keyForMode(mode);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // ignore

@@ -21,8 +21,29 @@
     addPartialPayment,
   } from '$lib/core/utils';
   import { exportPendingToPDF } from '$lib/core/export';
+  import { appMode, type AppMode } from '$lib/core/mode';
 
-  let status = $state(loadState() as AppState);
+  let mode = $state<AppMode>('sales');
+  $effect.pre(() => {
+    const unsub = appMode.subscribe((m) => (mode = m));
+    return () => unsub();
+  });
+
+  // Estado principal separado por modo; inicializamos perezoso.
+  let status = $state<AppState>({ debtors: [], sales: [] });
+  let loadedMode: AppMode | null = null;
+
+  function ensureStateFor(current: AppMode) {
+    if (loadedMode !== current) {
+      status = loadState(current);
+      loadedMode = current;
+    }
+  }
+
+  // Cargar al inicio y cuando cambie el modo
+  $effect(() => {
+    ensureStateFor(mode);
+  });
   let query = $state('');
   let openSheet = $state(false);
   let statusFilter = $state<'all' | 'pending' | 'delivered'>('all');
@@ -32,8 +53,14 @@
   // For suggestions while sheet open, track a transient debtor name typed in the sheet.
   // We'll pass suggestions from state; the sheet itself doesn't send intermediate events, so use recent debtor names.
 
+  // Guardar siempre que cambie status (y tengamos modo cargado)
   $effect(() => {
-    saveState(status);
+    if (loadedMode) saveState(status, loadedMode);
+  });
+  // Al cambiar modo: cerrar formularios abiertos para evitar mezclar UI
+  $effect(() => {
+    // Este efecto depende de mode implícitamente
+    openSheet = false;
   });
 
   // Migración ligera: asignar currency 'USD' a ventas antiguas sin campo.
@@ -52,7 +79,7 @@
   });
 
   async function onExportPDF() {
-    await exportPendingToPDF(status);
+    await exportPendingToPDF(status); // Mantiene misma lógica para ambos modos
   }
 
   function onNewSale(form: NewSaleForm) {
@@ -283,6 +310,7 @@
     {isDesktop}
     {bolivarRate}
     {bolivarRateUpdatedAt}
+    {mode}
   />
 
   <div class="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 pt-2 text-xs text-zinc-600">
@@ -447,10 +475,15 @@
           <section
             class="rounded-xl border border-zinc-200 bg-white/70 p-10 text-center text-zinc-600"
           >
-            <p class="text-sm">Aún no hay ventas registradas.</p>
+            <p class="text-sm">
+              {mode === 'sales'
+                ? 'Aún no hay ventas registradas.'
+                : 'Aún no hay deudas registradas.'}
+            </p>
             <button
               class="mt-4 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-              onclick={() => (openSheet = true)}>Agregar primera venta</button
+              onclick={() => (openSheet = true)}
+              >{mode === 'sales' ? 'Agregar primera venta' : 'Registrar primera deuda'}</button
             >
             {#if isDesktop}
               <div class="mt-6 grid gap-4 text-left md:grid-cols-2">
@@ -496,14 +529,14 @@
                 </div>
                 {#key salesByDebtor(debtor.id).length}
                   <div
-                    class={`anim-stagger ${
+                    class={`${
                       salesByDebtor(debtor.id).length <= 2
                         ? 'flex flex-col gap-4 md:flex-row md:items-stretch'
                         : 'grid [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))] gap-4'
                     }`}
                   >
                     {#each salesByDebtor(debtor.id) as sale (sale.id)}
-                      <div class="anim-fade-in min-w-[320px] flex-1">
+                      <div class="min-w-[320px] flex-1">
                         <SaleCard
                           {sale}
                           debtorName={debtor.name}

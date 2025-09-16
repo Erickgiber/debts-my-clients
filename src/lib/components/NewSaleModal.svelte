@@ -3,6 +3,13 @@
   import UnsavedChangesDialog from '$lib/components/UnsavedChangesDialog.svelte';
   import SaleFormBase from '$lib/components/SaleFormBase.svelte';
   import type { NewSaleForm } from '$lib/core/types';
+  import { appMode } from '$lib/core/mode';
+
+  let mode = $state<'sales' | 'debts'>('sales');
+  $effect.pre(() => {
+    const unsub = appMode.subscribe((m) => (mode = m));
+    return () => unsub();
+  });
 
   let {
     open = false,
@@ -31,7 +38,9 @@
 {#snippet newSaleModal({ close }: { close: () => void })}
   <div class="flex flex-col gap-5">
     <header class="flex items-start justify-between gap-3">
-      <h2 id="new-sale-modal-title" class="text-base font-semibold tracking-tight">Nueva venta</h2>
+      <h2 id="new-sale-modal-title" class="text-base font-semibold tracking-tight">
+        {mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
+      </h2>
       <button
         type="button"
         class="grid h-9 w-9 place-content-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
@@ -60,7 +69,9 @@
       }}
       onCancel={() => (showConfirm = false)}
       title="Descartar cambios"
-      description="Tienes datos sin guardar en esta nueva venta. ¿Cerrar y perderlos?"
+      description={mode === 'sales'
+        ? 'Tienes datos sin guardar en esta nueva venta. ¿Cerrar y perderlos?'
+        : 'Tienes datos sin guardar en esta nueva deuda. ¿Cerrar y perderlos?'}
       confirmText="Salir sin guardar"
       cancelText="Seguir editando"
     />
