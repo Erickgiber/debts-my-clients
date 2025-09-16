@@ -84,8 +84,9 @@ export function upsertDebtor(
 export function addSale(
   state: AppState,
   debtor: Debtor,
-  items: Omit<SaleItem, 'id'>[],
+  items: (Omit<SaleItem, 'id'> & { unitPriceVES?: number })[],
   delivered: boolean,
+  currency: 'USD' | 'VES' = 'USD',
 ): Sale {
   const sale: Sale = {
     id: uid(),
@@ -96,6 +97,7 @@ export function addSale(
     status: delivered ? 'delivered' : 'pending',
     deliveredAt: delivered ? new Date().toISOString() : undefined,
     createdAt: new Date().toISOString(),
+    currency,
   };
   state.sales.unshift(sale);
   return sale;
@@ -226,7 +228,9 @@ export function updateSale(
     const unitPrice = Math.max(0, Number(incoming.unitPrice));
     if (incoming.id && existing.has(incoming.id)) {
       const prev = existing.get(incoming.id)!;
-      next.push({ ...prev, product, quantity, unitPrice });
+      // Mantener unitPriceVES si ya existía o si la venta está en VES
+      const unitPriceVES = sale.currency === 'VES' ? prev.unitPriceVES : undefined;
+      next.push({ ...prev, product, quantity, unitPrice, unitPriceVES });
     } else {
       next.push({ id: uid(), product, quantity, unitPrice });
     }

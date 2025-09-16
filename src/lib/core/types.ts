@@ -15,6 +15,8 @@ export interface SaleItem {
   product: string;
   quantity: number;
   unitPrice: number;
+  /** Si la venta se ingresó originalmente en VES, almacenar el precio original en bolívares para edición futura. */
+  unitPriceVES?: number;
 }
 
 export interface Sale {
@@ -26,6 +28,8 @@ export interface Sale {
   deliveredAt?: string; // ISO if delivered
   createdAt: string; // ISO
   status: SaleStatus;
+  /** Moneda base con la que se ingresó la venta originalmente. */
+  currency?: 'USD' | 'VES';
 }
 
 export interface AppState {
@@ -43,4 +47,6 @@ export interface NewSaleForm {
   }>;
   delivered: boolean;
   notes?: string;
+  /** Moneda en la que se ingresan los precios unitarios. 'USD' para dólares o 'VES' (Bolívares). */
+  currency?: 'USD' | 'VES';
 }

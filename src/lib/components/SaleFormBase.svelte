@@ -31,6 +31,7 @@
     items: [{ product: '', quantity: 1, unitPrice: 0 }],
     delivered: false,
     notes: '',
+    currency: 'USD',
   });
 
   function addItem() {
@@ -49,6 +50,7 @@
       items: [{ product: '', quantity: 1, unitPrice: 0 }],
       delivered: false,
       notes: '',
+      currency: 'USD',
     };
   }
   export function hasUserInput(): boolean {
@@ -61,6 +63,7 @@
     if (only.product.trim()) return true;
     if (only.quantity !== 1) return true;
     if (only.unitPrice !== 0) return true;
+    if (form.currency && form.currency !== 'USD') return true; // cambio en la moneda
     return false;
   }
 
@@ -79,7 +82,14 @@
     return active.every((it) => it.product.trim() && it.quantity > 0 && it.unitPrice >= 0);
   }
   const formValid = $derived(computeValid());
+  // Total siempre en la moneda seleccionada
   const total = $derived(form.items.reduce((sum, it) => sum + it.quantity * it.unitPrice, 0));
+  const totalUSD = $derived(
+    form.currency === 'USD' ? total : bolivarRate ? total / bolivarRate : total,
+  );
+  const totalVES = $derived(
+    form.currency === 'VES' ? total : bolivarRate ? total * bolivarRate : total,
+  );
 
   export function getForm(): NewSaleForm {
     return form;
@@ -121,6 +131,23 @@
     />
   </div>
   <div class="space-y-4 pt-2">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <p class="text-xs text-zinc-600">Items</p>
+      <div class="grid gap-1">
+        <label
+          class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase"
+          for={`currency-${variant}`}>Moneda</label
+        >
+        <select
+          id={`currency-${variant}`}
+          class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs ring-zinc-300 outline-none focus:ring-2"
+          bind:value={form.currency}
+        >
+          <option value="USD">Dólar ($)</option>
+          <option value="VES">Bolívares (Bs)</option>
+        </select>
+      </div>
+    </div>
     {#each form.items as item, i}
       <fieldset class="space-y-2 rounded-lg border border-zinc-200 p-3">
         <div class="flex items-start justify-between gap-2">
@@ -189,11 +216,21 @@
           </div>
         </div>
         <p class="text-right text-xs text-zinc-500">
-          Subtotal: {(item.quantity * item.unitPrice).toFixed(2)}
-          {#if bolivarRate}
-            <span class="ml-1 text-[10px] text-zinc-400"
-              >(Bs {(item.quantity * item.unitPrice * bolivarRate).toFixed(2)})</span
-            >
+          Subtotal:
+          {#if form.currency === 'USD'}
+            $ {(item.quantity * item.unitPrice).toFixed(2)}
+            {#if bolivarRate}
+              <span class="ml-1 text-[10px] text-zinc-400"
+                >(Bs {(item.quantity * item.unitPrice * bolivarRate).toFixed(2)})</span
+              >
+            {/if}
+          {:else}
+            Bs {(item.quantity * item.unitPrice).toFixed(2)}
+            {#if bolivarRate}
+              <span class="ml-1 text-[10px] text-zinc-400"
+                >($ {((item.quantity * item.unitPrice) / bolivarRate).toFixed(2)})</span
+              >
+            {/if}
           {/if}
         </p>
       </fieldset>
@@ -206,11 +243,16 @@
       >
     </div>
     <div class="flex flex-col items-end text-sm font-medium text-zinc-700">
-      <div>Total: <span class="ml-1">{total.toFixed(2)}</span></div>
-      {#if bolivarRate}
-        <div class="text-[10px] font-normal text-zinc-500">
-          ≈ Bs {(total * bolivarRate).toFixed(2)}
-        </div>
+      {#if form.currency === 'USD'}
+        <div>Total: <span class="ml-1">$ {totalUSD.toFixed(2)}</span></div>
+        {#if bolivarRate}
+          <div class="text-[10px] font-normal text-zinc-500">≈ Bs {totalVES.toFixed(2)}</div>
+        {/if}
+      {:else}
+        <div>Total: <span class="ml-1">Bs {totalVES.toFixed(2)}</span></div>
+        {#if bolivarRate}
+          <div class="text-[10px] font-normal text-zinc-500">≈ $ {totalUSD.toFixed(2)}</div>
+        {/if}
       {/if}
     </div>
   </div>

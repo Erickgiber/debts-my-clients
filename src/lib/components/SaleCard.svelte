@@ -36,6 +36,7 @@
   let draftPaid = $state(false);
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
+  let draftCurrency = $state<'USD' | 'VES'>(sale.currency || 'USD');
   let isDesktop = $state(false);
   // Modal para ver todos los productos cuando hay más de 2
   let showingAllItems = $state(false);
@@ -62,6 +63,7 @@
     draftPaid = sale.status === 'delivered';
     draftDebtorName = debtorName;
     draftDebtorPhone = debtorPhone ?? '';
+    draftCurrency = sale.currency || 'USD';
     editing = true;
   }
   function cancelEdit() {
@@ -164,7 +166,8 @@
           Number(it.unitPrice) !== orig.unitPrice
         );
       }) ||
-      sale.items.length !== draftItems.length,
+      sale.items.length !== draftItems.length ||
+      draftCurrency !== (sale.currency || 'USD'),
   );
 
   function restoreDraft() {
@@ -178,6 +181,7 @@
     draftPaid = sale.status === 'delivered';
     draftDebtorName = debtorName;
     draftDebtorPhone = debtorPhone ?? '';
+    draftCurrency = sale.currency || 'USD';
   }
 
   // Pending amount with tiny tolerance to avoid floating point issues hiding the button
@@ -281,6 +285,17 @@
         />
       </div>
       <div class="grid gap-1">
+        <label class="text-xs text-zinc-600" for={`currency-${sale.id}`}>Moneda</label>
+        <select
+          id={`currency-${sale.id}`}
+          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+          bind:value={draftCurrency}
+        >
+          <option value="USD">Dólar ($)</option>
+          <option value="VES">Bolívares (Bs)</option>
+        </select>
+      </div>
+      <div class="grid gap-1">
         <label class="text-xs text-zinc-600" for={`debtor-phone-${sale.id}`}>Teléfono</label>
         <input
           id={`debtor-phone-${sale.id}`}
@@ -319,9 +334,30 @@
             step="0.01"
             bind:value={draftItems[i].unitPrice}
           />
-          <span class="ml-auto w-auto text-right text-xs text-zinc-600 sm:w-20"
-            >{currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}</span
-          >
+          <span class="ml-auto w-auto text-right text-xs text-zinc-600 sm:w-20">
+            {#if draftCurrency === 'USD'}
+              {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
+              {#if bolivarRate}
+                <span class="ml-1 text-[10px] text-zinc-400"
+                  >(Bs {(
+                    Number(draftItems[i].quantity) *
+                    Number(draftItems[i].unitPrice) *
+                    bolivarRate
+                  ).toFixed(2)})</span
+                >
+              {/if}
+            {:else}
+              Bs {(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)).toFixed(2)}
+              {#if bolivarRate}
+                <span class="ml-1 text-[10px] text-zinc-400"
+                  >($ {(
+                    (Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)) /
+                    bolivarRate
+                  ).toFixed(2)})</span
+                >
+              {/if}
+            {/if}
+          </span>
           <button
             type="button"
             class="text-xs text-red-600 hover:underline disabled:opacity-40"
@@ -337,7 +373,24 @@
           class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-300"
           onclick={addDraftItem}>Añadir producto</button
         >
-        <span class="text-xs text-zinc-600">Total: <strong>{currency(draftTotal)}</strong></span>
+        <span class="text-xs text-zinc-600">
+          Total:
+          {#if draftCurrency === 'USD'}
+            <strong>{currency(draftTotal)}</strong>
+            {#if bolivarRate}
+              <span class="ml-1 text-[10px] text-zinc-400"
+                >(Bs {(draftTotal * bolivarRate).toFixed(2)})</span
+              >
+            {/if}
+          {:else}
+            <strong>Bs {draftTotal.toFixed(2)}</strong>
+            {#if bolivarRate}
+              <span class="ml-1 text-[10px] text-zinc-400"
+                >($ {(draftTotal / bolivarRate).toFixed(2)})</span
+              >
+            {/if}
+          {/if}
+        </span>
       </div>
       <div class="flex justify-end gap-2 pt-2">
         <button
@@ -547,6 +600,23 @@
           </div>
         {/if}
         <div class="space-y-3">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <p class="text-xs text-zinc-600">Items</p>
+            <div class="grid gap-1">
+              <label
+                class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase"
+                for={`currency-modal-${sale.id}`}>Moneda</label
+              >
+              <select
+                id={`currency-modal-${sale.id}`}
+                class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs"
+                bind:value={draftCurrency}
+              >
+                <option value="USD">Dólar ($)</option>
+                <option value="VES">Bolívares (Bs)</option>
+              </select>
+            </div>
+          </div>
           {#each draftItems as it, i (it.id)}
             <div
               class="grid gap-2 rounded-lg bg-zinc-50 p-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:bg-transparent md:p-0"
@@ -572,7 +642,28 @@
                 bind:value={draftItems[i].unitPrice}
               />
               <span class="w-auto text-right text-xs text-zinc-600 md:w-24 md:self-center">
-                {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
+                {#if draftCurrency === 'USD'}
+                  {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
+                  {#if bolivarRate}
+                    <span class="ml-1 text-[10px] text-zinc-400"
+                      >(Bs {(
+                        Number(draftItems[i].quantity) *
+                        Number(draftItems[i].unitPrice) *
+                        bolivarRate
+                      ).toFixed(2)})</span
+                    >
+                  {/if}
+                {:else}
+                  Bs {(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)).toFixed(2)}
+                  {#if bolivarRate}
+                    <span class="ml-1 text-[10px] text-zinc-400"
+                      >($ {(
+                        (Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)) /
+                        bolivarRate
+                      ).toFixed(2)})</span
+                    >
+                  {/if}
+                {/if}
               </span>
               <button
                 type="button"
@@ -589,8 +680,24 @@
               class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-300"
               onclick={addDraftItem}>Añadir producto</button
             >
-            <span class="text-xs text-zinc-600">Total: <strong>{currency(draftTotal)}</strong></span
-            >
+            <span class="text-xs text-zinc-600">
+              Total:
+              {#if draftCurrency === 'USD'}
+                <strong>{currency(draftTotal)}</strong>
+                {#if bolivarRate}
+                  <span class="ml-1 text-[10px] text-zinc-400"
+                    >(Bs {(draftTotal * bolivarRate).toFixed(2)})</span
+                  >
+                {/if}
+              {:else}
+                <strong>Bs {draftTotal.toFixed(2)}</strong>
+                {#if bolivarRate}
+                  <span class="ml-1 text-[10px] text-zinc-400"
+                    >($ {(draftTotal / bolivarRate).toFixed(2)})</span
+                  >
+                {/if}
+              {/if}
+            </span>
           </div>
         </div>
         <div class="flex flex-wrap justify-end gap-3 pt-4">

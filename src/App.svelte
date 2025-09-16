@@ -36,6 +36,13 @@
     saveState(status);
   });
 
+  // Migración ligera: asignar currency 'USD' a ventas antiguas sin campo.
+  $effect(() => {
+    for (const s of status.sales) {
+      if (!s.currency) s.currency = 'USD';
+    }
+  });
+
   $effect(() => {
     if (openSheet && typeof window !== 'undefined') {
       document.body.style.overflow = 'hidden';
@@ -50,12 +57,19 @@
 
   function onNewSale(form: NewSaleForm) {
     const debtor = upsertDebtor(status, form.debtorName, form.phone, form.notes);
-    const items = form.items.map((it) => ({
-      product: it.product.trim(),
-      quantity: Number(it.quantity),
-      unitPrice: Number(it.unitPrice),
-    }));
-    addSale(status, debtor, items, form.delivered);
+    const isVES = form.currency === 'VES';
+    const rate = bolivarRate || null; // bolívares por USD
+    const items = form.items.map((it) => {
+      const original = Number(it.unitPrice);
+      const converted = isVES && rate && rate > 0 ? original / rate : original;
+      return {
+        product: it.product.trim(),
+        quantity: Number(it.quantity),
+        unitPrice: converted, // almacenado siempre en USD
+        unitPriceVES: isVES ? original : undefined,
+      };
+    });
+    addSale(status, debtor, items, form.delivered, form.currency || 'USD');
     openSheet = false;
   }
 
