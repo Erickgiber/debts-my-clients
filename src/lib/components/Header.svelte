@@ -1,6 +1,7 @@
 <script lang="ts">
   import { appMode, type AppMode } from '$lib/core/mode';
   import ModeToggle from '$lib/components/ModeToggle.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { get } from 'svelte/store';
 
   let {
@@ -29,7 +30,9 @@
   } = $props();
 </script>
 
-<header class="sticky top-0 z-10 border-b border-zinc-200 bg-white/70 backdrop-blur">
+<header
+  class="sticky top-0 z-10 border-b border-zinc-200 bg-white/70 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/70"
+>
   <div class="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3">
     <div class="flex-1">
       <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
@@ -37,16 +40,18 @@
           {mode === 'sales' ? 'Gestor de ventas' : 'Gestor de deudas'}
         </h1>
         <ModeToggle />
+        <ThemeToggle />
       </div>
-      <p class="space-y-0.5 text-xs text-zinc-500">
+      <p class="space-y-0.5 text-xs text-zinc-500 dark:text-zinc-400">
         <span
           >{mode === 'sales' ? 'Ventas' : 'Deudas'}:
           <span class="font-medium">{totalSales}</span></span
         ><br />
-        <span>{totalLabel}: <span class="font-medium">{totalPending}</span></span>
+        <span>{totalLabel}: <span class="font-medium dark:text-zinc-200">{totalPending}</span></span
+        >
         {#if bolivarRate && typeof totalPendingRaw === 'number'}
           <br />
-          <span class="text-[10px] text-zinc-400">
+          <span class="text-[10px] text-zinc-400 dark:text-zinc-500">
             ≈ Bs {(totalPendingRaw * bolivarRate).toFixed(2)}
             {#if bolivarRateUpdatedAt}
               <span class="ml-1 opacity-60"

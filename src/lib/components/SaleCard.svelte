@@ -284,8 +284,10 @@
 </script>
 
 <article
-  class={`anim-fade-in flex h-full flex-col rounded-xl border bg-white p-4 shadow-sm transition-colors ${
-    editing && isDesktop ? 'border-blue-500 ring-2 ring-blue-200' : 'border-zinc-200'
+  class={`anim-fade-in flex h-full flex-col rounded-xl border bg-white p-4 shadow-sm transition-colors dark:border-zinc-700 dark:bg-zinc-900/60 ${
+    editing && isDesktop
+      ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-400/40'
+      : 'border-zinc-200'
   }`}
 >
   <header class="flex items-center justify-between">
@@ -299,20 +301,20 @@
           >
         {/if}
       </h3>
-      <p class="text-xs text-zinc-500">
+      <p class="text-xs text-zinc-500 dark:text-zinc-400">
         {new Date(sale.createdAt).toLocaleString()}
       </p>
     </div>
     <div class="inline-flex items-center gap-2">
       {#if sale.status === 'pending'}
         <span
-          class="inline-flex items-center gap-2 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-800"
+          class="inline-flex items-center gap-2 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-800 dark:bg-amber-300/20 dark:text-amber-300"
         >
           Pendiente
         </span>
       {:else}
         <span
-          class="inline-flex items-center gap-2 rounded-md bg-emerald-100 px-2 py-1 text-xs text-emerald-800"
+          class="inline-flex items-center gap-2 rounded-md bg-emerald-100 px-2 py-1 text-xs text-emerald-800 dark:bg-emerald-300/20 dark:text-emerald-300"
         >
           Pagado
         </span>
@@ -320,7 +322,7 @@
       {#if !editing}
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98]"
+          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98] dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
           onclick={startEdit}
           aria-label={mode === 'sales' ? 'Editar venta' : 'Editar deuda'}>Editar</button
         >
@@ -331,18 +333,22 @@
   {#if editing && !isDesktop}
     <div class="anim-scale-in mt-3 space-y-2 text-sm">
       <div class="grid gap-1">
-        <label class="text-xs text-zinc-600" for={`debtor-${sale.id}`}>Cliente</label>
+        <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`debtor-${sale.id}`}
+          >Cliente</label
+        >
         <input
           id={`debtor-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           bind:value={draftDebtorName}
         />
       </div>
       <div class="grid gap-1">
-        <label class="text-xs text-zinc-600" for={`currency-${sale.id}`}>Moneda</label>
+        <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`currency-${sale.id}`}
+          >Moneda</label
+        >
         <select
           id={`currency-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           bind:value={draftCurrency}
         >
           <option value="USD">Dólar ($)</option>
@@ -350,10 +356,12 @@
         </select>
       </div>
       <div class="grid gap-1">
-        <label class="text-xs text-zinc-600" for={`debtor-phone-${sale.id}`}>Teléfono</label>
+        <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`debtor-phone-${sale.id}`}
+          >Teléfono</label
+        >
         <input
           id={`debtor-phone-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
           placeholder="Opcional"
           bind:value={draftDebtorPhone}
         />
@@ -361,34 +369,34 @@
       {#if sale.status !== 'pending'}
         <div class="flex items-center gap-2">
           <input id={`paid-${sale.id}`} type="checkbox" class="size-4" bind:checked={draftPaid} />
-          <label class="text-sm" for={`paid-${sale.id}`}>Pagado</label>
+          <label class="text-sm dark:text-zinc-300" for={`paid-${sale.id}`}>Pagado</label>
         </div>
       {/if}
       {#each draftItems as it, i (it.id)}
         <div
-          class="flex flex-wrap items-end gap-2 rounded-md bg-zinc-50 p-2 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] sm:bg-transparent sm:p-0"
+          class="flex flex-wrap items-end gap-2 rounded-md bg-zinc-50 p-2 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] sm:bg-transparent sm:p-0 dark:bg-zinc-800/40"
         >
           <div class="min-w-[140px] flex-1">
             <input
-              class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+              class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
               bind:value={draftItems[i].product}
               placeholder="Producto"
             />
           </div>
           <input
-            class="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+            class="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
             type="number"
             min="1"
             bind:value={draftItems[i].quantity}
           />
           <input
-            class="w-28 rounded-lg border border-zinc-200 px-2 py-1 text-sm"
+            class="w-28 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
             type="number"
             min="0"
             step="0.01"
             bind:value={draftItems[i].unitPrice}
           />
-          <span class="ml-auto w-auto text-right text-xs text-zinc-600 sm:w-20">
+          <span class="ml-auto w-auto text-right text-xs text-zinc-600 sm:w-20 dark:text-zinc-400">
             {#if draftCurrency === 'USD'}
               {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
               {#if bolivarRate}
@@ -470,8 +478,10 @@
         {#each sale.items.slice(0, 2) as it}
           <li class="flex flex-col">
             <div class="flex justify-between">
-              <span class="text-zinc-700">{it.product} × {it.quantity}</span>
-              <span class="font-medium">{currency(it.unitPrice * it.quantity)}</span>
+              <span class="text-zinc-700 dark:text-zinc-200">{it.product} × {it.quantity}</span>
+              <span class="font-medium text-zinc-900 dark:text-zinc-100"
+                >{currency(it.unitPrice * it.quantity)}</span
+              >
             </div>
           </li>
         {/each}
@@ -492,20 +502,22 @@
   {/if}
 
   <footer class="mt-auto space-y-4 pt-3">
-    <div class="space-y-0.5 text-xs text-zinc-600">
+    <div class="space-y-0.5 text-xs text-zinc-600 dark:text-zinc-400">
       <div>
-        Total: <span class="font-semibold text-zinc-900">{currency(sale.total)}</span>
+        Total: <span class="font-semibold text-zinc-900 dark:text-zinc-100"
+          >{currency(sale.total)}</span
+        >
         {#if sale.total && bolivarRate}
-          <span class="ml-1 text-[10px] text-zinc-500"
+          <span class="ml-1 text-[10px] text-zinc-500 dark:text-zinc-500/70"
             >(Bs {(sale.total * bolivarRate).toFixed(2)})</span
           >
         {/if}
       </div>
       {#if sale.paid}
         <div>
-          Pagado: <span class="font-medium">{currency(sale.paid)}</span>
+          Pagado: <span class="font-medium dark:text-zinc-200">{currency(sale.paid)}</span>
           {#if bolivarRate}
-            <span class="ml-1 text-[10px] text-zinc-500"
+            <span class="ml-1 text-[10px] text-zinc-500 dark:text-zinc-500/70"
               >(Bs {(sale.paid * bolivarRate).toFixed(2)})</span
             >
           {/if}
@@ -513,9 +525,11 @@
       {/if}
       {#if remainingAmount(sale) > 0}
         <div>
-          Resta: <span class="font-medium">{currency(remainingAmount(sale))}</span>
+          Resta: <span class="font-medium dark:text-zinc-200"
+            >{currency(remainingAmount(sale))}</span
+          >
           {#if bolivarRate}
-            <span class="ml-1 text-[10px] text-zinc-500"
+            <span class="ml-1 text-[10px] text-zinc-500 dark:text-zinc-500/70"
               >(Bs {(remainingAmount(sale) * bolivarRate).toFixed(2)})</span
             >
           {/if}

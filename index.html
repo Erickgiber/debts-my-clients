@@ -19,6 +19,26 @@
 
     <!-- Windows / Edge -->
     <meta name="msapplication-TileColor" content="#18181b" />
+    <script>
+      (function () {
+        try {
+          var key = 'app-theme-v1';
+          var stored = localStorage.getItem(key);
+          if (stored === 'dark') {
+            document.documentElement.classList.add('dark');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#0f0f11');
+          } else {
+            // Forzar light si no hay valor guardado
+            document.documentElement.classList.remove('dark');
+            var metaL = document.querySelector('meta[name="theme-color"]');
+            if (metaL) metaL.setAttribute('content', '#f8f8f9');
+          }
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

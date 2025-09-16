@@ -19,17 +19,17 @@
 
 <button
   type="button"
-  class="group relative inline-grid h-8 w-40 grid-cols-2 items-stretch overflow-hidden rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 p-1 text-[11px] font-medium text-zinc-600 shadow-sm ring-1 ring-zinc-300 transition hover:from-white hover:to-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] lg:cursor-pointer"
+  class="group relative inline-grid h-8 w-40 grid-cols-2 items-stretch overflow-hidden rounded-full bg-zinc-200 p-1 text-[11px] font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] lg:cursor-pointer dark:bg-zinc-700 dark:text-zinc-200 dark:ring-zinc-600"
   aria-label="Cambiar modo"
   onclick={toggle}
 >
   <!-- Knob rediseñado: usa left en lugar de translate para evitar overflow -->
   <span
-    class="pointer-events-none absolute top-1 h-6 w-[calc(50%-4px)] rounded-full bg-white shadow ring-1 ring-zinc-300 transition-all duration-400 ease-[cubic-bezier(.34,1.56,.64,1)]"
-    style={`left: ${mode === 'sales' ? '4px' : 'calc(50% + 0px)'}`}
+    class="pointer-events-none absolute top-1 h-6 w-[calc(50%-4px)] rounded-full shadow ring-1 transition-all duration-300 ease-out"
+    style={`left:${mode === 'sales' ? '4px' : 'calc(50% + 0px)'}`}
   ></span>
   <span
-    class="relative z-10 flex items-center justify-center gap-1 rounded-full transition-colors duration-300"
+    class="relative z-10 flex items-center justify-center gap-1 rounded-full transition-colors duration-200"
     class:opacity-100={mode === 'sales'}
     class:opacity-60={mode !== 'sales'}
   >
@@ -42,7 +42,7 @@
     Ventas
   </span>
   <span
-    class="relative z-10 flex items-center justify-center gap-1 rounded-full transition-colors duration-300"
+    class="relative z-10 flex items-center justify-center gap-1 rounded-full transition-colors duration-200"
     class:opacity-100={mode === 'debts'}
     class:opacity-60={mode !== 'debts'}
   >

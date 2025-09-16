@@ -22,6 +22,7 @@
   } from '$lib/core/utils';
   import { exportPendingToPDF } from '$lib/core/export';
   import { appMode, type AppMode } from '$lib/core/mode';
+  import { theme } from '$lib/core/theme';
 
   let mode = $state<AppMode>('sales');
   $effect.pre(() => {
@@ -226,6 +227,12 @@
   const deliveredSalesCount = $derived(status.sales.filter((s) => s.status === 'delivered').length);
 
   let isDesktop = $state(false);
+  // Debug: estado de tema actual (remover cuando ya no se necesite)
+  let currentTheme = $state<'light' | 'dark'>('light');
+  $effect.pre(() => {
+    const unsubTheme = theme.subscribe((t) => (currentTheme = t));
+    return () => unsubTheme();
+  });
   // Desktop ahora sólo si ancho >= 1140px para no activar en tablets grandes u horizontales
   $effect(() => {
     if (typeof window === 'undefined') return;
@@ -235,8 +242,6 @@
     mql.addEventListener('change', update);
     return () => mql.removeEventListener('change', update);
   });
-
-  $inspect(isDesktop);
 
   // Keyboard shortcuts
   $effect(() => {
@@ -299,7 +304,9 @@
   });
 </script>
 
-<div class="min-h-dvh bg-zinc-50 text-zinc-900">
+<div
+  class="min-h-dvh bg-zinc-50 text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100"
+>
   <Header
     totalPending={currency(headerSum)}
     totalPendingRaw={headerSum}
@@ -313,7 +320,9 @@
     {mode}
   />
 
-  <div class="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 pt-2 text-xs text-zinc-600">
+  <div
+    class="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 pt-2 text-xs text-zinc-600 dark:text-zinc-400"
+  >
     {#if loadingRate}
       <div class="flex items-center gap-2">
         <span>Cargando tasa</span>
@@ -343,7 +352,7 @@
         <div class="relative">
           <input
             id="global-search"
-            class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-10 text-sm ring-zinc-300 outline-none focus:ring-2"
+            class="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 pr-10 text-sm ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             placeholder="Buscar cliente (/)..."
             bind:value={query}
           />
@@ -355,7 +364,7 @@
           <div class="lg:hidden">
             <button
               type="button"
-              class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-100 active:scale-[.98]"
+              class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-100 active:scale-[.98] dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700/80"
               aria-expanded={showFilters}
               aria-controls="filters-panel"
               onclick={() => (showFilters = !showFilters)}
@@ -367,17 +376,19 @@
           {#if showFilters || isDesktop}
             <div
               id="filters-panel"
-              class="grid gap-4 rounded-xl border border-zinc-200 bg-white p-4 lg:p-5"
+              class="grid gap-4 rounded-xl border border-zinc-200 bg-white p-4 lg:p-5 dark:border-zinc-700 dark:bg-zinc-800"
             >
               <div
                 class="grid [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))] gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]"
               >
                 <div class="grid min-w-[140px] gap-1">
-                  <label class="text-xs font-medium text-zinc-600" for="filter-status">Estado</label
+                  <label
+                    class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    for="filter-status">Estado</label
                   >
                   <select
                     id="filter-status"
-                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                     bind:value={statusFilter}
                   >
                     <option value="all">Todos</option>
@@ -386,20 +397,26 @@
                   </select>
                 </div>
                 <div class="grid min-w-[140px] gap-1">
-                  <label class="text-xs font-medium text-zinc-600" for="filter-from">Desde</label>
+                  <label
+                    class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    for="filter-from">Desde</label
+                  >
                   <input
                     id="filter-from"
                     type="date"
-                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-4 text-sm"
+                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-4 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                     bind:value={dateFrom}
                   />
                 </div>
                 <div class="grid min-w-[140px] gap-1">
-                  <label class="text-xs font-medium text-zinc-600" for="filter-to">Hasta</label>
+                  <label
+                    class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+                    for="filter-to">Hasta</label
+                  >
                   <input
                     id="filter-to"
                     type="date"
-                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-4 text-sm"
+                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 pr-4 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                     bind:value={dateTo}
                   />
                 </div>
@@ -407,7 +424,7 @@
               <div class="flex flex-wrap justify-end gap-3 pt-1">
                 <button
                   type="button"
-                  class="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-800"
+                  class="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                   onclick={() => {
                     statusFilter = 'all';
                     dateFrom = '';
@@ -417,7 +434,7 @@
                 {#if !isDesktop}
                   <button
                     type="button"
-                    class="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-800"
+                    class="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                     onclick={() => (showFilters = false)}>Cerrar</button
                   >
                 {/if}
@@ -427,44 +444,60 @@
         </section>
         {#if isDesktop}
           <section class="grid gap-4">
-            <div class="grid gap-4 rounded-xl border border-zinc-200 bg-white p-4 text-xs">
+            <div
+              class="grid gap-4 rounded-xl border border-zinc-200 bg-white p-4 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            >
               <h3 class="text-sm font-semibold">Resumen</h3>
               <ul class="space-y-1">
                 <li class="flex justify-between">
-                  <span class="text-zinc-500">Pendiente</span><span class="font-medium"
-                    >{currency(totalPendingUSD)}</span
+                  <span class="text-zinc-500 dark:text-zinc-400">Pendiente</span><span
+                    class="font-medium dark:text-zinc-100">{currency(totalPendingUSD)}</span
                   >
                 </li>
                 <li class="flex justify-between">
-                  <span class="text-zinc-500">Pagado</span><span class="font-medium"
-                    >{currency(totalDeliveredUSD)}</span
+                  <span class="text-zinc-500 dark:text-zinc-400">Pagado</span><span
+                    class="font-medium dark:text-zinc-100">{currency(totalDeliveredUSD)}</span
                   >
                 </li>
                 <li class="flex justify-between">
-                  <span class="text-zinc-500">Ventas pendientes</span><span class="font-medium"
-                    >{pendingSalesCount}</span
+                  <span class="text-zinc-500 dark:text-zinc-400">Ventas pendientes</span><span
+                    class="font-medium dark:text-zinc-100">{pendingSalesCount}</span
                   >
                 </li>
                 <li class="flex justify-between">
-                  <span class="text-zinc-500">Ventas pagadas</span><span class="font-medium"
-                    >{deliveredSalesCount}</span
+                  <span class="text-zinc-500 dark:text-zinc-400">Ventas pagadas</span><span
+                    class="font-medium dark:text-zinc-100">{deliveredSalesCount}</span
                   >
                 </li>
               </ul>
               {#if bolivarRate}
-                <p class="pt-1 text-[10px] text-zinc-500">
+                <p class="pt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
                   ≈ Bs {(totalPendingUSD * bolivarRate).toFixed(2)} pendientes
                 </p>
               {/if}
             </div>
-            <div class="rounded-xl border border-dashed border-zinc-300 p-4 text-xs text-zinc-500">
-              <p class="mb-2 font-medium text-zinc-700">Atajos</p>
+            <div
+              class="rounded-xl border border-dashed border-zinc-300 p-4 text-xs text-zinc-500 dark:border-zinc-600 dark:text-zinc-400"
+            >
+              <p class="mb-2 font-medium text-zinc-700 dark:text-zinc-300">Atajos</p>
               <ul class="space-y-1">
                 <li>
-                  <kbd class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px]">Shift</kbd> +
-                  <kbd class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px]">N</kbd> Nueva venta
+                  <kbd
+                    class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] dark:bg-zinc-700 dark:text-zinc-100"
+                    >Shift</kbd
+                  >
+                  +
+                  <kbd
+                    class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] dark:bg-zinc-700 dark:text-zinc-100"
+                    >N</kbd
+                  > Nueva venta
                 </li>
-                <li><kbd class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px]">/</kbd> Buscar</li>
+                <li>
+                  <kbd
+                    class="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] dark:bg-zinc-700 dark:text-zinc-100"
+                    >/</kbd
+                  > Buscar
+                </li>
               </ul>
             </div>
           </section>
@@ -473,7 +506,7 @@
       <div class="space-y-6">
         {#if status.debtors.length === 0}
           <section
-            class="rounded-xl border border-zinc-200 bg-white/70 p-10 text-center text-zinc-600"
+            class="rounded-xl border border-zinc-200 bg-white/70 p-10 text-center text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400"
           >
             <p class="text-sm">
               {mode === 'sales'
@@ -481,7 +514,7 @@
                 : 'Aún no hay deudas registradas.'}
             </p>
             <button
-              class="mt-4 inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              class="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
               onclick={() => (openSheet = true)}
               >{mode === 'sales' ? 'Agregar primera venta' : 'Registrar primera deuda'}</button
             >
@@ -581,6 +614,11 @@
     class="fixed right-3 bottom-[34px] z-30 text-[10px] text-zinc-500 opacity-70 select-none print:hidden"
   >
     v{APP_VERSION}
+  </div>
+  <div
+    class="fixed right-3 bottom-[56px] z-30 rounded-md bg-black/5 px-2 py-1 text-[10px] font-medium text-zinc-600 backdrop-blur select-none dark:bg-white/10 dark:text-zinc-300 print:hidden"
+  >
+    theme: {currentTheme}
   </div>
   <div class="fixed right-3 bottom-2 z-30 select-none print:hidden">
     <a

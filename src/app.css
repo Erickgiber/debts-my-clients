@@ -78,6 +78,7 @@
   font-display: swap;
 }
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Redefinimos breakpoint lg a 1140px y ajustamos max-w-7xl a 1920px.
    NOTA: El bloque @theme debe ir DESPUÉS del @import para que sobrescriba los tokens por defecto. */
@@ -115,6 +116,13 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #a1a1aa;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-color: #18181b;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
   }
   /* Animations */
   @keyframes fade-in {
