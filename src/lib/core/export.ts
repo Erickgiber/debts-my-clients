@@ -38,8 +38,9 @@ export async function exportPendingToPDF(state: AppState) {
     byDebtor.set(s.debtorId, arr);
   }
 
-  const money = (n: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+  const moneyUSD = (n: number) =>
+    new Intl.NumberFormat('es-US', { style: 'currency', currency: 'USD' }).format(n);
+  const moneyVES = (n: number) => `Bs ${n.toFixed(2)}`;
 
   const totalPending = pendingSales.reduce((sum, s) => sum + s.total, 0);
   const debtorsWithPending = [...byDebtor.keys()].length;
@@ -56,7 +57,7 @@ export async function exportPendingToPDF(state: AppState) {
   doc.setFontSize(10);
   doc.text(`Generado: ${createdAt.toLocaleString()}`, left, y);
   y += 14;
-  doc.text(`Total pendiente: ${money(totalPending)}`, left, y);
+  doc.text(`Total pendiente: ${moneyUSD(totalPending)}`, left, y);
   y += 14;
   doc.text(`Clientes con pendiente: ${debtorsWithPending}`, left, y);
   y += 14;
@@ -74,6 +75,13 @@ export async function exportPendingToPDF(state: AppState) {
     const debtor = debtorsById.get(debtorId);
     const sales = byDebtor.get(debtorId) || [];
     const subtotal = sales.reduce((sum, s) => sum + s.total, 0);
+    const subtotalVES = sales.reduce(
+      (sum, s) =>
+        s.currency === 'VES'
+          ? sum + s.items.reduce((a, it) => a + (it.unitPriceVES || it.unitPrice) * it.quantity, 0)
+          : sum,
+      0,
+    );
 
     if (!first) {
       doc.addPage();
@@ -88,36 +96,49 @@ export async function exportPendingToPDF(state: AppState) {
     y += 16;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Total pendiente: ${money(subtotal)}`, left, y);
+    doc.text(
+      `Total pendiente: ${moneyUSD(subtotal)}` +
+        (subtotalVES ? ` (≈ Bs ${subtotalVES.toFixed(2)})` : ''),
+      left,
+      y,
+    );
     y += 12;
 
     // Build rows: one row per item in each sale
     const rows: any[] = [];
     for (const sale of sales) {
       for (const it of sale.items) {
+        const totalUSD = it.unitPrice * it.quantity;
+        const showVES = sale.currency === 'VES';
+        const unitOriginal = showVES ? it.unitPriceVES || it.unitPrice : null;
+        const totalOriginal = showVES ? unitOriginal! * it.quantity : null;
         rows.push([
           fmtDate(sale.createdAt),
           it.product,
           it.quantity,
-          money(it.unitPrice),
-          money(it.unitPrice * it.quantity),
+          showVES
+            ? moneyVES(unitOriginal!) + '\n' + moneyUSD(it.unitPrice)
+            : moneyUSD(it.unitPrice),
+          showVES ? moneyVES(totalOriginal!) + '\n' + moneyUSD(totalUSD) : moneyUSD(totalUSD),
+          sale.currency || 'USD',
         ]);
       }
     }
 
     autoTable(doc, {
       startY: Math.max(y + 8, y),
-      head: [['Fecha', 'Producto', 'Cant.', 'Unitario', 'Total']],
+      head: [['Fecha', 'Producto', 'Cant.', 'Unitario (Orig / USD)', 'Total (Orig / USD)', 'Mon.']],
       body: rows,
       styles: { fontSize: 9, cellPadding: 6 },
       headStyles: { fillColor: [24, 24, 27] }, // zinc-900
       alternateRowStyles: { fillColor: [245, 245, 245] },
       columnStyles: {
-        0: { cellWidth: 130 },
+        0: { cellWidth: 110 },
         1: { cellWidth: 'auto' },
         2: { cellWidth: 50, halign: 'right' },
-        3: { cellWidth: 80, halign: 'right' },
-        4: { cellWidth: 80, halign: 'right' },
+        3: { cellWidth: 90, halign: 'right' },
+        4: { cellWidth: 90, halign: 'right' },
+        5: { cellWidth: 40, halign: 'center' },
       },
       margin: { left: 40, right: 40 },
       didDrawPage(_data: any) {

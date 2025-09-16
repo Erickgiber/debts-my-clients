@@ -32,11 +32,13 @@
   let editing = $state(false);
   let addingPayment = $state(false);
   let partialAmount = $state('');
+  let partialCurrency = $state<'USD' | 'VES'>('USD');
   let draftItems = $state<Array<Pick<SaleItem, 'id' | 'product' | 'quantity' | 'unitPrice'>>>([]);
   let draftPaid = $state(false);
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
   let draftCurrency = $state<'USD' | 'VES'>(sale.currency || 'USD');
+  let lastCurrency = draftCurrency;
   let isDesktop = $state(false);
   // Modal para ver todos los productos cuando hay más de 2
   let showingAllItems = $state(false);
@@ -79,18 +81,47 @@
     const nameChanged = !!(name && name !== debtorName);
     const phone = draftDebtorPhone.trim();
     const phoneChanged = phone !== (debtorPhone ?? '');
+    // Preparar items: si moneda es VES, enviar unitPrice en la unidad mostrada (VES) y se convertirá en App.
     onEdit?.(sale.id, {
-      items: draftItems,
+      items: draftItems.map((it) => ({ ...it })),
       paid: draftPaid,
       debtorName: nameChanged ? name : undefined,
       debtorPhone: phoneChanged ? phone : undefined,
+      currency: draftCurrency,
     });
     editing = false;
   }
 
+  // Conversión automática al cambiar moneda en modo edición.
+  $effect(() => {
+    if (!editing) return;
+    if (draftCurrency === lastCurrency) return;
+    // Necesitamos tasa para convertir.
+    if (!bolivarRate || bolivarRate <= 0) {
+      // Revertir cambio si no tenemos tasa.
+      draftCurrency = lastCurrency;
+      return;
+    }
+    if (lastCurrency === 'USD' && draftCurrency === 'VES') {
+      // USD -> VES: multiplicar
+      draftItems = draftItems.map((it) => ({
+        ...it,
+        unitPrice: Number(it.unitPrice) * bolivarRate,
+      }));
+    } else if (lastCurrency === 'VES' && draftCurrency === 'USD') {
+      // VES -> USD: dividir
+      draftItems = draftItems.map((it) => ({
+        ...it,
+        unitPrice: bolivarRate ? Number(it.unitPrice) / bolivarRate : Number(it.unitPrice),
+      }));
+    }
+    lastCurrency = draftCurrency;
+  });
+
   function startAddPayment() {
     addingPayment = true;
     partialAmount = '';
+    partialCurrency = sale.currency || 'USD';
   }
   function cancelAddPayment() {
     addingPayment = false;
@@ -99,7 +130,13 @@
   function confirmAddPayment() {
     const value = Number(partialAmount);
     if (!Number.isFinite(value) || value <= 0) return;
-    onPartialPayment?.(sale.id, value);
+    // Convert if user entered in VES (needs bolivarRate)
+    let usdValue = value;
+    if (partialCurrency === 'VES') {
+      if (!bolivarRate || bolivarRate <= 0) return; // no tasa -> no permitir
+      usdValue = value / bolivarRate;
+    }
+    onPartialPayment?.(sale.id, usdValue);
     addingPayment = false;
     partialAmount = '';
   }
@@ -494,11 +531,19 @@
                   placeholder="$"
                   bind:value={partialAmount}
                 />
+                <select
+                  class="h-8 rounded-lg border border-zinc-300 bg-white px-1.5 text-[11px]"
+                  bind:value={partialCurrency}
+                >
+                  <option value="USD">USD</option>
+                  <option value="VES">Bs</option>
+                </select>
                 <button
                   type="button"
                   class="h-8 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white hover:bg-emerald-500"
                   onclick={confirmAddPayment}
-                  disabled={!partialAmount}>OK</button
+                  disabled={!partialAmount ||
+                    (partialCurrency === 'VES' && (!bolivarRate || bolivarRate <= 0))}>OK</button
                 >
                 <button
                   type="button"

@@ -93,9 +93,31 @@
       paid: boolean;
       debtorName?: string;
       debtorPhone?: string;
+      currency?: 'USD' | 'VES';
     },
   ) {
-    updateSale(status, saleId, payload.items);
+    const sale = status.sales.find((s) => s.id === saleId);
+    const targetCurrency = payload.currency || sale?.currency || 'USD';
+    const rate = bolivarRate || null;
+    // Convert incoming unitPrice si la moneda objetivo es USD pero el draft venía en VES (draftCurrency manejado en SaleCard ya convirtió precios visualmente). Aquí asumimos que los unitPrice están en la moneda mostrada.
+    let adjustedItems = payload.items.map((it) => ({ ...it }));
+    if (targetCurrency === 'VES') {
+      // Guardamos unitPrice en USD internamente => convertir VES -> USD si tenemos tasa
+      if (rate && rate > 0) {
+        adjustedItems = adjustedItems.map((it) => ({
+          ...it,
+          unitPriceVES: it.unitPrice,
+          unitPrice: it.unitPrice / rate,
+        }));
+      } else {
+        // Sin tasa no convertimos (se queda igual en USD interpretado) -> Podríamos alertar
+      }
+    } else {
+      // Currency USD => limpiar unitPriceVES
+      adjustedItems = adjustedItems.map((it) => ({ ...it, unitPriceVES: undefined }));
+    }
+    if (sale) sale.currency = targetCurrency;
+    updateSale(status, saleId, adjustedItems as any);
     setSalePaid(status, saleId, payload.paid);
     if (payload.debtorName !== undefined) {
       const sale = status.sales.find((s) => s.id === saleId);
