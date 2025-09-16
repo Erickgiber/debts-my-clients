@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   import { appMode, type AppMode } from '$lib/core/mode';
+  import ModeToggle from '$lib/components/ModeToggle.svelte';
   import { get } from 'svelte/store';
 
   let {
@@ -15,7 +14,6 @@
     totalSales = 0,
     isDesktop = false,
     mode = get(appMode),
-    onToggleMode,
   }: {
     totalPending?: string | number;
     totalPendingRaw?: number | null;
@@ -29,33 +27,16 @@
     mode?: AppMode;
     onToggleMode?: (next: AppMode) => void;
   } = $props();
-
-  $effect.pre(() => {
-    const unsub = appMode.subscribe((m) => (mode = m));
-    return () => unsub();
-  });
-
-  function toggleMode() {
-    const next: AppMode = mode === 'sales' ? 'debts' : 'sales';
-    appMode.set(next);
-    onToggleMode?.(next);
-  }
 </script>
 
 <header class="sticky top-0 z-10 border-b border-zinc-200 bg-white/70 backdrop-blur">
   <div class="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3">
     <div class="flex-1">
-      <div class="flex items-center gap-2">
+      <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
         <h1 class="text-lg font-semibold tracking-tight">
           {mode === 'sales' ? 'Gestor de ventas' : 'Gestor de deudas'}
         </h1>
-        <button
-          type="button"
-          class="rounded-full border border-zinc-300 bg-white px-2 py-1 text-[10px] font-medium text-zinc-600 hover:bg-zinc-100"
-          onclick={toggleMode}
-          aria-label="Cambiar a {mode === 'sales' ? 'deudas' : 'ventas'}"
-          >{mode === 'sales' ? 'Deudas' : 'Ventas'}</button
-        >
+        <ModeToggle />
       </div>
       <p class="space-y-0.5 text-xs text-zinc-500">
         <span
