@@ -66,3 +66,34 @@ export function showUpdatingToast(
     onConfirm();
   });
 }
+
+// Toast simple genérico (auto-destructivo) para mensajes informativos / error liviano
+export function showToast(
+  message: string,
+  opts: { variant?: 'info' | 'warn' | 'error'; ttlMs?: number } = {},
+) {
+  if (typeof document === 'undefined') return;
+  const id = 'app-generic-toast';
+  const existing = document.getElementById(id);
+  if (existing) existing.remove();
+  const container = document.createElement('div');
+  container.id = id;
+  const colors =
+    opts.variant === 'error'
+      ? 'bg-red-600 text-white'
+      : opts.variant === 'warn'
+        ? 'bg-amber-500 text-zinc-900'
+        : 'bg-zinc-900 text-white';
+  container.className = `fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2 rounded-lg shadow-lg text-sm font-medium ${colors} opacity-0 translate-y-3 transition duration-300`;
+  container.textContent = message;
+  document.body.appendChild(container);
+  requestAnimationFrame(() => {
+    container.classList.remove('opacity-0', 'translate-y-3');
+    container.classList.add('opacity-100', 'translate-y-0');
+  });
+  const ttl = opts.ttlMs ?? 3000;
+  setTimeout(() => {
+    container.classList.add('opacity-0', 'translate-y-3');
+    setTimeout(() => container.remove(), 280);
+  }, ttl);
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { NewSaleForm } from '$lib/core/types';
+  import { showToast } from '$lib/core/toast';
 
   // Reusable form component for creating a new sale
   // Exposes methods via component instance: hasUserInput(), reset()
@@ -31,7 +32,41 @@
     items: [{ product: '', quantity: 1, unitPrice: 0 }],
     delivered: false,
     notes: '',
-    currency: 'USD',
+    currency: 'USD', // será reemplazado por preferencia si existe
+  });
+
+  // Clave de localStorage para preferencia de moneda
+  const PREF_KEY = 'default-currency-v1';
+
+  // Cargar preferencia inicial al montar (siempre que no se haya modificado manualmente todavía)
+  // Carga diferida de preferencia (evita warnings de captura inicial)
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    // Sólo ejecutar si aún está en USD inicial y no se cambió manualmente
+    if (form.currency !== 'USD') return;
+    const stored = localStorage.getItem(PREF_KEY);
+    if (stored === 'USD' || stored === 'VES') {
+      form.currency = stored;
+    }
+  });
+
+  // Efecto para validar selección de moneda y persistir preferencia
+  let lastCurrency: 'USD' | 'VES' = 'USD';
+  $effect(() => {
+    if (form.currency === lastCurrency) return;
+    // Si intenta pasar a VES sin tasa disponible revertimos y avisamos
+    if (form.currency === 'VES' && (!bolivarRate || bolivarRate <= 0)) {
+      showToast('No hay tasa disponible para convertir a Bs.', { variant: 'warn' });
+      form.currency = lastCurrency; // revertir
+      return;
+    }
+    lastCurrency = (form.currency as 'USD' | 'VES') ?? 'USD';
+    // Guardar preferencia
+    if (typeof window !== 'undefined') {
+      try {
+        if (form.currency) localStorage.setItem(PREF_KEY, form.currency);
+      } catch {}
+    }
   });
 
   function addItem() {

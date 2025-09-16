@@ -2,6 +2,7 @@
   import type { Sale, SaleItem } from '$lib/core/types';
   import { currency, daysSince, remainingAmount } from '$lib/core/utils';
   import ModalPortal from '$lib/components/SaleModalPortal.svelte';
+  import { showToast } from '$lib/core/toast';
 
   let {
     sale,
@@ -24,6 +25,7 @@
         paid: boolean;
         debtorName?: string;
         debtorPhone?: string;
+        currency?: 'USD' | 'VES';
       },
     ) => void;
     onPartialPayment?: (saleId: string, amount: number) => void;
@@ -38,7 +40,8 @@
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
   let draftCurrency = $state<'USD' | 'VES'>(sale.currency || 'USD');
-  let lastCurrency = draftCurrency;
+  // Mantenemos un valor simple (no $state) para la moneda anterior
+  let lastCurrency: 'USD' | 'VES' = sale.currency || 'USD';
   let isDesktop = $state(false);
   // Modal para ver todos los productos cuando hay más de 2
   let showingAllItems = $state(false);
@@ -99,6 +102,7 @@
     // Necesitamos tasa para convertir.
     if (!bolivarRate || bolivarRate <= 0) {
       // Revertir cambio si no tenemos tasa.
+      showToast('No hay tasa disponible para convertir a Bs.', { variant: 'warn' });
       draftCurrency = lastCurrency;
       return;
     }
@@ -116,6 +120,12 @@
       }));
     }
     lastCurrency = draftCurrency;
+    // Persistir preferencia global
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('default-currency-v1', draftCurrency);
+      } catch {}
+    }
   });
 
   function startAddPayment() {
