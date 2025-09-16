@@ -77,11 +77,15 @@
   font-style: italic;
   font-display: swap;
 }
-/* Redefinimos breakpoint lg a 1140px vía token Tailwind v4 */
+@import 'tailwindcss';
+
+/* Redefinimos breakpoint lg a 1140px y ajustamos max-w-7xl a 1920px.
+   NOTA: El bloque @theme debe ir DESPUÉS del @import para que sobrescriba los tokens por defecto. */
 @theme {
   --breakpoint-lg: 1140px;
+  /* Tailwind usa tokens --container-... para max-w-* */
+  --container-7xl: 1920px; /* 1920px (≈120rem) */
 }
-@import 'tailwindcss';
 
 @layer utilities {
   .min-h-dvh {

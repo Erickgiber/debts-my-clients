@@ -37,6 +37,8 @@
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
   let isDesktop = $state(false);
+  // Modal para ver todos los productos cuando hay más de 2
+  let showingAllItems = $state(false);
 
   // Detect desktop
   $effect(() => {
@@ -224,7 +226,7 @@
 </script>
 
 <article
-  class={`anim-fade-in rounded-xl border bg-white p-4 shadow-sm transition-colors ${
+  class={`anim-fade-in h-full rounded-xl border bg-white p-4 shadow-sm transition-colors ${
     editing && isDesktop ? 'border-blue-500 ring-2 ring-blue-200' : 'border-zinc-200'
   }`}
 >
@@ -358,7 +360,7 @@
         ></div>
       {/if}
       <ul class="space-y-1">
-        {#each sale.items as it}
+        {#each sale.items.slice(0, 2) as it}
           <li class="flex flex-col">
             <div class="flex justify-between">
               <span class="text-zinc-700">{it.product} × {it.quantity}</span>
@@ -367,6 +369,18 @@
           </li>
         {/each}
       </ul>
+      {#if sale.items.length > 2}
+        <div class="mt-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:bg-zinc-200"
+            aria-label={`Ver todos los productos (${sale.items.length})`}
+            onclick={() => (showingAllItems = true)}
+          >
+            Ver {sale.items.length - 2} más…
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -619,6 +633,48 @@
       onClose={cancelEdit}
       size="lg"
       children={editModal}
+    />
+  {/key}
+{/if}
+
+{#if showingAllItems}
+  {#key sale.id + '-items-modal'}
+    {#snippet itemsModal({ close }: { close: () => void })}
+      <header class="mb-4 flex items-center justify-between">
+        <h2 id={`items-title-${sale.id}`} class="text-base font-semibold">Productos de la venta</h2>
+        <button
+          type="button"
+          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"
+          aria-label="Cerrar"
+          onclick={() => close()}>✕</button
+        >
+      </header>
+      <div class="max-h-[60vh] space-y-2 overflow-auto pr-2 text-sm">
+        <ul class="space-y-1">
+          {#each sale.items as it}
+            <li class="flex flex-col rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2">
+              <div class="flex justify-between gap-3">
+                <span class="text-zinc-700">{it.product} × {it.quantity}</span>
+                <span class="font-medium">{currency(it.unitPrice * it.quantity)}</span>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          onclick={() => close()}>Cerrar</button
+        >
+      </div>
+    {/snippet}
+    <ModalPortal
+      labelledBy={`items-title-${sale.id}`}
+      beforeClose={() => {}}
+      onClose={() => (showingAllItems = false)}
+      size="md"
+      children={itemsModal}
     />
   {/key}
 {/if}
