@@ -295,7 +295,7 @@
         >
         <input
           id={`debtor-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+          class="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
           bind:value={draftDebtorName}
         />
       </div>
@@ -305,7 +305,7 @@
         >
         <select
           id={`currency-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+          class="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
           bind:value={draftCurrency}
         >
           <option value="USD">Dólar ($)</option>
@@ -318,7 +318,7 @@
         >
         <input
           id={`debtor-phone-${sale.id}`}
-          class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+          class="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
           placeholder="Opcional"
           bind:value={draftDebtorPhone}
         />
@@ -335,19 +335,19 @@
         >
           <div class="min-w-[140px] flex-1">
             <input
-              class="w-full rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+              class="w-full rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
               bind:value={draftItems[i].product}
               placeholder="Producto"
             />
           </div>
           <input
-            class="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            class="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
             type="number"
             min="1"
             bind:value={draftItems[i].quantity}
           />
           <input
-            class="w-28 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+            class="w-28 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
             type="number"
             min="0"
             step="0.01"
@@ -357,7 +357,7 @@
             {#if draftCurrency === 'USD'}
               {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
               {#if bolivarRate}
-                <span class="ml-1 text-[10px] text-zinc-400"
+                <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                   >(Bs {(
                     Number(draftItems[i].quantity) *
                     Number(draftItems[i].unitPrice) *
@@ -368,7 +368,7 @@
             {:else}
               Bs {(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)).toFixed(2)}
               {#if bolivarRate}
-                <span class="ml-1 text-[10px] text-zinc-400"
+                <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                   >($ {(
                     (Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)) /
                     bolivarRate
@@ -379,7 +379,7 @@
           </span>
           <button
             type="button"
-            class="text-xs text-red-600 hover:underline disabled:opacity-40"
+            class="text-xs text-red-600 hover:underline disabled:opacity-40 dark:text-red-400"
             aria-label="Eliminar"
             onclick={() => removeDraftItem(it.id)}
             disabled={draftItems.length === 1}>✕</button
@@ -389,22 +389,22 @@
       <div class="flex items-center justify-between pt-2">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-300"
+          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
           onclick={addDraftItem}>Añadir producto</button
         >
-        <span class="text-xs text-zinc-600">
+        <span class="text-xs text-zinc-600 dark:text-zinc-400">
           Total:
           {#if draftCurrency === 'USD'}
             <strong>{currency(draftTotal)}</strong>
             {#if bolivarRate}
-              <span class="ml-1 text-[10px] text-zinc-400"
+              <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                 >(Bs {(draftTotal * bolivarRate).toFixed(2)})</span
               >
             {/if}
           {:else}
             <strong>Bs {draftTotal.toFixed(2)}</strong>
             {#if bolivarRate}
-              <span class="ml-1 text-[10px] text-zinc-400"
+              <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                 >($ {(draftTotal / bolivarRate).toFixed(2)})</span
               >
             {/if}
@@ -414,7 +414,7 @@
       <div class="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-300"
+          class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
           onclick={cancelEdit}>Cancelar</button
         >
         <button

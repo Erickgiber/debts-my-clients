@@ -615,20 +615,22 @@
   >
     v{APP_VERSION}
   </div>
-  <div
-    class="fixed right-3 bottom-[56px] z-30 rounded-md bg-black/5 px-2 py-1 text-[10px] font-medium text-zinc-600 backdrop-blur select-none dark:bg-white/10 dark:text-zinc-300 print:hidden"
-  >
-    theme: {currentTheme}
-  </div>
+
   <div class="fixed right-3 bottom-2 z-30 select-none print:hidden">
     <a
       href="https://erickgiber.vercel.app"
       target="_blank"
       rel="noopener noreferrer"
-      class="group inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-zinc-500 shadow ring-1 ring-zinc-200 backdrop-blur transition hover:bg-white hover:text-zinc-700"
+      class="group inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[11px] font-medium text-zinc-500 shadow ring-1 ring-zinc-200 backdrop-blur transition hover:bg-white hover:text-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400 dark:ring-zinc-700 dark:hover:bg-zinc-800/80"
     >
-      <span class="opacity-80 group-hover:opacity-100">Creado por:</span>
-      <span class="text-zinc-700 group-hover:text-zinc-900">Erick Ramírez</span>
+      <span
+        class="opacity-80 group-hover:opacity-100 dark:text-zinc-400 dark:group-hover:text-zinc-200"
+        >Creado por:</span
+      >
+      <span
+        class="text-zinc-700 group-hover:text-zinc-900 dark:text-zinc-100 dark:group-hover:text-white"
+        >Erick Ramírez</span
+      >
     </a>
   </div>
 </div>
