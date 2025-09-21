@@ -110,7 +110,7 @@
 <div bind:this={host} class="fixed inset-0 z-[1000] overflow-y-auto">
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 bg-black/50 transition-opacity duration-200 ${closing
+    class="fixed inset-0 bg-black/50 transition-opacity duration-200 dark:bg-black/60 ${closing
       ? 'opacity-0'
       : 'opacity-100'}"
     role="presentation"
@@ -121,7 +121,7 @@
   <div class="min-h-full w-full px-4 py-10 sm:px-6 lg:px-8">
     <div
       bind:this={panel}
-      class={`relative mx-auto w-full ${sizeClass()} rounded-2xl bg-white p-6 shadow-2xl outline-none ${reduceMotion ? '' : closing ? 'animate-modal-exit' : 'animate-modal-enter'}`}
+      class={`relative mx-auto w-full ${sizeClass()} rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 outline-none dark:bg-zinc-900 dark:text-zinc-100 dark:ring-white/5 ${reduceMotion ? '' : closing ? 'animate-modal-exit' : 'animate-modal-enter'}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}

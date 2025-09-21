@@ -143,7 +143,7 @@
     <!-- Botón Nueva Venta / Deuda (siempre visible) -->
     <div class="group relative inline-block">
       <button
-        class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-gradient-to-b from-white/90 to-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm ring-0 shadow-zinc-950/5 transition duration-150 hover:border-zinc-300 hover:from-white hover:to-zinc-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] active:shadow-inner md:cursor-pointer"
+        class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-gradient-to-b from-white/90 to-zinc-50 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm ring-0 shadow-zinc-950/5 transition duration-150 hover:border-zinc-300 hover:from-white hover:to-zinc-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:scale-[.97] active:shadow-inner md:cursor-pointer dark:border-zinc-700 dark:from-zinc-800 dark:to-zinc-800/80 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:from-zinc-700 dark:hover:to-zinc-700"
         onclick={onAdd}
         aria-label={mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
         aria-describedby="new-sale-tip"
@@ -154,7 +154,7 @@
           viewBox="0 0 24 24"
           width="18"
           height="18"
-          class="text-zinc-600 transition group-hover:text-zinc-700"
+          class="text-zinc-600 transition group-hover:text-zinc-700 dark:text-zinc-300 dark:group-hover:text-zinc-200"
           aria-hidden="true"
         >
           <path
@@ -162,7 +162,9 @@
             d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2"
           />
         </svg>
-        <span class="hidden text-[13px] font-semibold tracking-tight md:inline-block">
+        <span
+          class="hidden text-[13px] font-semibold tracking-tight md:inline-block dark:text-zinc-100"
+        >
           {mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
         </span>
         <span
@@ -173,10 +175,11 @@
         <div
           id="new-sale-tip"
           role="tooltip"
-          class="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+          class="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-zinc-800 dark:ring-white/10"
         >
           {mode === 'sales' ? 'Crear nueva venta' : 'Registrar nueva deuda'}
-          <span class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-zinc-900"
+          <span
+            class="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-zinc-900 dark:bg-zinc-800"
           ></span>
         </div>
       {/if}

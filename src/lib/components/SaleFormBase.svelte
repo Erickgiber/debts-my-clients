@@ -139,10 +139,12 @@
 
 <form class="space-y-5" onsubmit={submit}>
   <div class="grid gap-1">
-    <label class="text-xs text-zinc-600" for={`cliente-${variant}`}>Cliente</label>
+    <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`cliente-${variant}`}
+      >Cliente</label
+    >
     <input
       id={`cliente-${variant}`}
-      class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+      class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
       placeholder="Nombre"
       bind:value={form.debtorName}
       list={`debtor-suggestions-${variant}`}
@@ -157,25 +159,27 @@
     {/if}
   </div>
   <div class="grid gap-1">
-    <label class="text-xs text-zinc-600" for={`telefono-${variant}`}>Teléfono</label>
+    <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`telefono-${variant}`}
+      >Teléfono</label
+    >
     <input
       id={`telefono-${variant}`}
-      class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+      class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
       placeholder="Opcional"
       bind:value={form.phone}
     />
   </div>
   <div class="space-y-4 pt-2">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <p class="text-xs text-zinc-600">Items</p>
+      <p class="text-xs text-zinc-600 dark:text-zinc-300">Items</p>
       <div class="grid gap-1">
         <label
-          class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase"
+          class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400"
           for={`currency-${variant}`}>Moneda</label
         >
         <select
           id={`currency-${variant}`}
-          class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs ring-zinc-300 outline-none focus:ring-2"
+          class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
           bind:value={form.currency}
         >
           <option value="USD">Dólar ($)</option>
@@ -184,13 +188,15 @@
       </div>
     </div>
     {#each form.items as item, i}
-      <fieldset class="space-y-2 rounded-lg border border-zinc-200 p-3">
+      <fieldset class="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
         <div class="flex items-start justify-between gap-2">
-          <legend class="text-xs font-medium text-zinc-600">Producto {i + 1}</legend>
+          <legend class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+            >Producto {i + 1}</legend
+          >
           {#if form.items.length > 1}
             <button
               type="button"
-              class="text-xs text-red-600 hover:underline"
+              class="text-xs text-red-600 hover:underline dark:text-red-400"
               onclick={() => removeItem(i)}
               aria-label="Eliminar producto">Eliminar</button
             >
@@ -198,7 +204,7 @@
         </div>
         <div class="grid gap-1">
           <input
-            class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+            class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
             placeholder="Descripción"
             bind:value={item.product}
             list={`product-suggestions-${variant}`}
@@ -216,7 +222,7 @@
               {#each productSuggestions.slice(0, 6) as p}
                 <button
                   type="button"
-                  class="rounded-full border border-zinc-200 px-2 py-1 text-xs hover:bg-zinc-50"
+                  class="rounded-full border border-zinc-200 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-700/60"
                   onclick={() => (item.product = p)}>{p}</button
                 >
               {/each}
@@ -225,10 +231,12 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="grid gap-1">
-            <label class="text-xs text-zinc-600" for={`cantidad-${variant}-${i}`}>Cantidad</label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`cantidad-${variant}-${i}`}
+              >Cantidad</label
+            >
             <input
               id={`cantidad-${variant}-${i}`}
-              class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+              class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
               type="number"
               min="1"
               bind:value={item.quantity}
@@ -236,12 +244,13 @@
             />
           </div>
           <div class="grid gap-1">
-            <label class="text-xs text-zinc-600" for={`unitprice-${variant}-${i}`}
-              >Precio unitario</label
+            <label
+              class="text-xs text-zinc-600 dark:text-zinc-300"
+              for={`unitprice-${variant}-${i}`}>Precio unitario</label
             >
             <input
               id={`unitprice-${variant}-${i}`}
-              class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+              class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
               type="number"
               step="0.01"
               min="0"
@@ -250,19 +259,19 @@
             />
           </div>
         </div>
-        <p class="text-right text-xs text-zinc-500">
+        <p class="text-right text-xs text-zinc-500 dark:text-zinc-400">
           Subtotal:
           {#if form.currency === 'USD'}
             $ {(item.quantity * item.unitPrice).toFixed(2)}
             {#if bolivarRate}
-              <span class="ml-1 text-[10px] text-zinc-400"
+              <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                 >(Bs {(item.quantity * item.unitPrice * bolivarRate).toFixed(2)})</span
               >
             {/if}
           {:else}
             Bs {(item.quantity * item.unitPrice).toFixed(2)}
             {#if bolivarRate}
-              <span class="ml-1 text-[10px] text-zinc-400"
+              <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                 >($ {((item.quantity * item.unitPrice) / bolivarRate).toFixed(2)})</span
               >
             {/if}
@@ -273,20 +282,24 @@
     <div class="flex justify-end">
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98]"
+        class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-300 active:scale-[.98] dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
         onclick={addItem}>Añadir producto</button
       >
     </div>
-    <div class="flex flex-col items-end text-sm font-medium text-zinc-700">
+    <div class="flex flex-col items-end text-sm font-medium text-zinc-700 dark:text-zinc-200">
       {#if form.currency === 'USD'}
         <div>Total: <span class="ml-1">$ {totalUSD.toFixed(2)}</span></div>
         {#if bolivarRate}
-          <div class="text-[10px] font-normal text-zinc-500">≈ Bs {totalVES.toFixed(2)}</div>
+          <div class="text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
+            ≈ Bs {totalVES.toFixed(2)}
+          </div>
         {/if}
       {:else}
         <div>Total: <span class="ml-1">Bs {totalVES.toFixed(2)}</span></div>
         {#if bolivarRate}
-          <div class="text-[10px] font-normal text-zinc-500">≈ $ {totalUSD.toFixed(2)}</div>
+          <div class="text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
+            ≈ $ {totalUSD.toFixed(2)}
+          </div>
         {/if}
       {/if}
     </div>
@@ -298,13 +311,15 @@
       bind:checked={form.delivered}
       class="size-4"
     />
-    <label for={`delivered-${variant}`} class="text-sm">Pagado</label>
+    <label for={`delivered-${variant}`} class="text-sm text-zinc-800 dark:text-zinc-200"
+      >Pagado</label
+    >
   </div>
   <div class="grid gap-1">
-    <label class="text-xs text-zinc-600" for={`notas-${variant}`}>Notas</label>
+    <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`notas-${variant}`}>Notas</label>
     <textarea
       id={`notas-${variant}`}
-      class="min-h-20 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm ring-zinc-300 outline-none focus:ring-2"
+      class="min-h-20 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
       placeholder="Opcional"
       bind:value={form.notes}
     ></textarea>
@@ -312,12 +327,12 @@
   <div class="flex flex-wrap justify-end gap-3 pt-4">
     <button
       type="button"
-      class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-300 active:scale-[.97]"
+      class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-300 active:scale-[.97] dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
       onclick={onCancel}>{cancelLabel}</button
     >
     <button
       type="submit"
-      class="inline-flex items-center justify-center rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-40"
+      class="inline-flex items-center justify-center rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white transition active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-600 dark:hover:bg-zinc-500"
       class:bg-zinc-900={formValid}
       class:hover:bg-zinc-800={formValid}
       disabled={!formValid}>{submitLabel}</button

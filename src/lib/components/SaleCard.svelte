@@ -47,13 +47,10 @@
   let draftDebtorName = $state('');
   let draftDebtorPhone = $state('');
   let draftCurrency = $state<'USD' | 'VES'>(sale.currency || 'USD');
-  // Mantenemos un valor simple (no $state) para la moneda anterior
   let lastCurrency: 'USD' | 'VES' = sale.currency || 'USD';
   let isDesktop = $state(false);
-  // Modal para ver todos los productos cuando hay más de 2
   let showingAllItems = $state(false);
 
-  // Detect desktop
   $effect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(min-width: 1140px)');
@@ -62,8 +59,6 @@
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   });
-
-  // Con ModalPortal ya no necesitamos manejar scroll lock, focus trap ni Escape aquí.
 
   function startEdit() {
     draftItems = sale.items.map((it) => ({
@@ -91,7 +86,6 @@
     const nameChanged = !!(name && name !== debtorName);
     const phone = draftDebtorPhone.trim();
     const phoneChanged = phone !== (debtorPhone ?? '');
-    // Preparar items: si moneda es VES, enviar unitPrice en la unidad mostrada (VES) y se convertirá en App.
     onEdit?.(sale.id, {
       items: draftItems.map((it) => ({ ...it })),
       paid: draftPaid,
@@ -102,32 +96,26 @@
     editing = false;
   }
 
-  // Conversión automática al cambiar moneda en modo edición.
   $effect(() => {
     if (!editing) return;
     if (draftCurrency === lastCurrency) return;
-    // Necesitamos tasa para convertir.
     if (!bolivarRate || bolivarRate <= 0) {
-      // Revertir cambio si no tenemos tasa.
       showToast('No hay tasa disponible para convertir a Bs.', { variant: 'warn' });
       draftCurrency = lastCurrency;
       return;
     }
     if (lastCurrency === 'USD' && draftCurrency === 'VES') {
-      // USD -> VES: multiplicar
       draftItems = draftItems.map((it) => ({
         ...it,
         unitPrice: Number(it.unitPrice) * bolivarRate,
       }));
     } else if (lastCurrency === 'VES' && draftCurrency === 'USD') {
-      // VES -> USD: dividir
       draftItems = draftItems.map((it) => ({
         ...it,
         unitPrice: bolivarRate ? Number(it.unitPrice) / bolivarRate : Number(it.unitPrice),
       }));
     }
     lastCurrency = draftCurrency;
-    // Persistir preferencia global
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('default-currency-v1', draftCurrency);
@@ -147,10 +135,9 @@
   function confirmAddPayment() {
     const value = Number(partialAmount);
     if (!Number.isFinite(value) || value <= 0) return;
-    // Convert if user entered in VES (needs bolivarRate)
     let usdValue = value;
     if (partialCurrency === 'VES') {
-      if (!bolivarRate || bolivarRate <= 0) return; // no tasa -> no permitir
+      if (!bolivarRate || bolivarRate <= 0) return;
       usdValue = value / bolivarRate;
     }
     onPartialPayment?.(sale.id, usdValue);
@@ -168,6 +155,8 @@
   const draftTotal = $derived(
     draftItems.reduce((sum, it) => sum + Number(it.quantity) * Number(it.unitPrice), 0),
   );
+  const pendingRaw = $derived(remainingAmount(sale));
+  const pendingAmount = $derived(pendingRaw > 0.0001 ? pendingRaw : 0);
 
   function replaceNumberPhone(phone: string): string {
     if (!phone) return '';
@@ -184,29 +173,34 @@
     if (digits.length >= 10) return `+58${digits.slice(-10)}`;
     return '';
   }
+  const normalizedPhone = $derived(debtorPhone ? replaceNumberPhone(debtorPhone) : '');
 
-  function attemptDiscard(): boolean {
-    const dirty =
-      draftDebtorName.trim() !== debtorName.trim() ||
-      (debtorPhone ?? '') !== draftDebtorPhone.trim() ||
-      draftPaid !== (sale.status === 'delivered') ||
-      draftItems.some((it, idx) => {
-        const orig = sale.items[idx];
-        if (!orig) return true;
-        return (
-          it.product !== orig.product ||
-          Number(it.quantity) !== orig.quantity ||
-          Number(it.unitPrice) !== orig.unitPrice
-        );
-      }) ||
-      sale.items.length !== draftItems.length;
-    if (dirty) {
-      if (!confirm('Hay cambios sin guardar. ¿Cerrar de todos modos?')) return false;
-    }
-    return true;
+  function greeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 19) return 'Buenas tardes';
+    return 'Buenas noches';
   }
+  function buildWhatsAppMessage(): string {
+    if (!pendingAmount) return '';
+    const usd = currency(pendingAmount);
+    const bs = bolivarRate ? (pendingAmount * bolivarRate).toFixed(2) : null;
+    const namePart = debtorName ? ` ${debtorName.trim()}` : '';
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    let msg = `${greeting()}${namePart}. Le escribo el ${dateStr} para recordarle que mantiene un saldo pendiente de ${usd}`;
+    if (bs) msg += ` (Bs ${bs})`;
+    return msg;
+  }
+  const whatsappUrl = $derived(
+    !normalizedPhone || !pendingAmount
+      ? ''
+      : (() => {
+          const text = encodeURIComponent(buildWhatsAppMessage());
+          return `https://wa.me/${normalizedPhone.replace('+', '')}?text=${text}`;
+        })(),
+  );
 
-  // central isDirty derived for reuse
   const isDirty = $derived(
     draftDebtorName.trim() !== debtorName.trim() ||
       (debtorPhone ?? '') !== draftDebtorPhone.trim() ||
@@ -223,7 +217,6 @@
       sale.items.length !== draftItems.length ||
       draftCurrency !== (sale.currency || 'USD'),
   );
-
   function restoreDraft() {
     if (!isDirty) return;
     draftItems = sale.items.map((it) => ({
@@ -237,12 +230,6 @@
     draftDebtorPhone = debtorPhone ?? '';
     draftCurrency = sale.currency || 'USD';
   }
-
-  // Pending amount with tiny tolerance to avoid floating point issues hiding the button
-  const pendingRaw = $derived(remainingAmount(sale));
-  const pendingAmount = $derived(pendingRaw > 0.0001 ? pendingRaw : 0);
-  const normalizedPhone = $derived(debtorPhone ? replaceNumberPhone(debtorPhone) : '');
-  // Validación para modal de edición: requerimos nombre y cada item válido
   const isEditValid = $derived(
     draftDebtorName.trim().length > 0 &&
       draftItems.length > 0 &&
@@ -250,36 +237,6 @@
         (it) =>
           it.product.trim().length > 0 && Number(it.quantity) > 0 && Number(it.unitPrice) >= 0,
       ),
-  );
-
-  function greeting(): string {
-    const h = new Date().getHours();
-    if (h < 12) return 'Buenos días';
-    if (h < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-  }
-
-  function buildWhatsAppMessage(): string {
-    if (!pendingAmount) return '';
-    const usd = currency(pendingAmount);
-    const bs = bolivarRate ? (pendingAmount * bolivarRate).toFixed(2) : null;
-    const namePart = debtorName ? ` ${debtorName.trim()}` : '';
-    const today = new Date();
-    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(
-      today.getMonth() + 1,
-    ).padStart(2, '0')}/${today.getFullYear()}`;
-    let msg = `${greeting()}${namePart}. Le escribo el ${dateStr} para recordarle que mantiene un saldo pendiente de ${usd}`;
-    if (bs) msg += ` (Bs ${bs})`;
-    return msg;
-  }
-
-  const whatsappUrl = $derived(
-    !normalizedPhone || !pendingAmount
-      ? ''
-      : (() => {
-          const text = encodeURIComponent(buildWhatsAppMessage());
-          return `https://wa.me/${normalizedPhone.replace('+', '')}?text=${text}`;
-        })(),
   );
 </script>
 
@@ -639,34 +596,37 @@
 </article>
 
 {#if editing && isDesktop}
-  <!-- Dirty check -->
   {#key sale.id + String(editing)}
     {#snippet editModal({ close }: { close: () => void })}
       <header class="mb-4 flex items-center justify-between">
-        <h2 id={`edit-title-${sale.id}`} class="text-base font-semibold">
+        <h2 id={`edit-title-${sale.id}`} class="text-base font-semibold dark:text-zinc-100">
           {mode === 'sales' ? 'Editar venta' : 'Editar deuda'}
         </h2>
         <button
           type="button"
-          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"
+          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           aria-label="Cerrar"
           onclick={() => close()}>✕</button
         >
       </header>
       <div class="space-y-4 text-sm">
         <div class="grid gap-1">
-          <label class="text-xs text-zinc-600" for={`debtor-${sale.id}`}>Cliente</label>
+          <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`debtor-${sale.id}`}
+            >Cliente</label
+          >
           <input
             id={`debtor-${sale.id}`}
-            class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
             bind:value={draftDebtorName}
           />
         </div>
         <div class="grid gap-1">
-          <label class="text-xs text-zinc-600" for={`debtor-phone-${sale.id}`}>Teléfono</label>
+          <label class="text-xs text-zinc-600 dark:text-zinc-300" for={`debtor-phone-${sale.id}`}
+            >Teléfono</label
+          >
           <input
             id={`debtor-phone-${sale.id}`}
-            class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
             placeholder="Opcional"
             bind:value={draftDebtorPhone}
           />
@@ -674,20 +634,22 @@
         {#if sale.status !== 'pending'}
           <div class="flex items-center gap-2 pt-1">
             <input id={`paid-${sale.id}`} type="checkbox" class="size-4" bind:checked={draftPaid} />
-            <label class="text-sm" for={`paid-${sale.id}`}>Pagado</label>
+            <label class="text-sm text-zinc-800 dark:text-zinc-200" for={`paid-${sale.id}`}
+              >Pagado</label
+            >
           </div>
         {/if}
         <div class="space-y-3">
           <div class="flex flex-wrap items-end justify-between gap-4">
-            <p class="text-xs text-zinc-600">Items</p>
+            <p class="text-xs text-zinc-600 dark:text-zinc-300">Items</p>
             <div class="grid gap-1">
               <label
-                class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase"
+                class="text-[10px] font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400"
                 for={`currency-modal-${sale.id}`}>Moneda</label
               >
               <select
                 id={`currency-modal-${sale.id}`}
-                class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs"
+                class="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
                 bind:value={draftCurrency}
               >
                 <option value="USD">Dólar ($)</option>
@@ -697,33 +659,35 @@
           </div>
           {#each draftItems as it, i (it.id)}
             <div
-              class="grid gap-2 rounded-lg bg-zinc-50 p-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:bg-transparent md:p-0"
+              class="grid gap-2 rounded-lg bg-zinc-50 p-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:bg-transparent md:p-0 dark:bg-zinc-800/40"
             >
               <div class="min-w-[160px]">
                 <input
-                  class="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none placeholder:text-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600 dark:placeholder:text-zinc-500"
                   bind:value={draftItems[i].product}
                   placeholder="Producto"
                 />
               </div>
               <input
-                class="w-24 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                class="w-24 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
                 type="number"
                 min="1"
                 bind:value={draftItems[i].quantity}
               />
               <input
-                class="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                class="w-28 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-zinc-300 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-600"
                 type="number"
                 min="0"
                 step="0.01"
                 bind:value={draftItems[i].unitPrice}
               />
-              <span class="w-auto text-right text-xs text-zinc-600 md:w-24 md:self-center">
+              <span
+                class="w-auto text-right text-xs text-zinc-600 md:w-24 md:self-center dark:text-zinc-400"
+              >
                 {#if draftCurrency === 'USD'}
                   {currency(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice))}
                   {#if bolivarRate}
-                    <span class="ml-1 text-[10px] text-zinc-400"
+                    <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                       >(Bs {(
                         Number(draftItems[i].quantity) *
                         Number(draftItems[i].unitPrice) *
@@ -734,7 +698,7 @@
                 {:else}
                   Bs {(Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)).toFixed(2)}
                   {#if bolivarRate}
-                    <span class="ml-1 text-[10px] text-zinc-400"
+                    <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                       >($ {(
                         (Number(draftItems[i].quantity) * Number(draftItems[i].unitPrice)) /
                         bolivarRate
@@ -745,7 +709,7 @@
               </span>
               <button
                 type="button"
-                class="text-xs text-red-600 hover:underline disabled:opacity-40"
+                class="text-xs text-red-600 hover:underline disabled:opacity-40 dark:text-red-400"
                 aria-label="Eliminar"
                 onclick={() => removeDraftItem(it.id)}
                 disabled={draftItems.length === 1}>✕</button
@@ -755,22 +719,22 @@
           <div class="flex items-center justify-between pt-2">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-300"
+              class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
               onclick={addDraftItem}>Añadir producto</button
             >
-            <span class="text-xs text-zinc-600">
-              Total:
+            <span class="text-xs text-zinc-600 dark:text-zinc-400"
+              >Total:
               {#if draftCurrency === 'USD'}
                 <strong>{currency(draftTotal)}</strong>
                 {#if bolivarRate}
-                  <span class="ml-1 text-[10px] text-zinc-400"
+                  <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                     >(Bs {(draftTotal * bolivarRate).toFixed(2)})</span
                   >
                 {/if}
               {:else}
                 <strong>Bs {draftTotal.toFixed(2)}</strong>
                 {#if bolivarRate}
-                  <span class="ml-1 text-[10px] text-zinc-400"
+                  <span class="ml-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                     >($ {(draftTotal / bolivarRate).toFixed(2)})</span
                   >
                 {/if}
@@ -781,18 +745,18 @@
         <div class="flex flex-wrap justify-end gap-3 pt-4">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+            class="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-200 dark:hover:bg-zinc-800"
             disabled={!isDirty}
             onclick={restoreDraft}>Restaurar</button
           >
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-300"
+            class="inline-flex items-center justify-center rounded-lg bg-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
             onclick={close}>Cancelar</button
           >
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            class="inline-flex items-center justify-center rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-600 dark:hover:bg-zinc-500"
             class:bg-zinc-900={isEditValid}
             disabled={!isEditValid}
             onclick={() => {

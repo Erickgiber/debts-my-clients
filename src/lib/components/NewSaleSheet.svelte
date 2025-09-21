@@ -56,16 +56,22 @@
 
 {#if open}
   <div class="fixed inset-0 z-50 flex">
-    <button type="button" class="flex-1 bg-black/40" onclick={attemptClose} aria-label="Cerrar"
+    <button
+      type="button"
+      class="flex-1 bg-black/40 dark:bg-black/60"
+      onclick={attemptClose}
+      aria-label="Cerrar"
     ></button>
     <aside
-      class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl lg:max-w-xl lg:p-6"
+      class="ml-auto h-full w-full max-w-md overflow-y-auto rounded-l-2xl bg-white p-4 shadow-xl lg:max-w-xl lg:p-6 dark:bg-zinc-900 dark:text-zinc-100"
     >
       <header class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-semibold">{mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}</h2>
+        <h2 class="text-base font-semibold dark:text-zinc-100">
+          {mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
+        </h2>
         <button
           type="button"
-          class="grid size-8 place-content-center rounded-lg hover:bg-zinc-100"
+          class="grid size-8 place-content-center rounded-lg hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           onclick={attemptClose}
           aria-label="Cerrar">✕</button
         >

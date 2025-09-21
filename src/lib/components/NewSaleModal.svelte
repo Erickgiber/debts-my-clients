@@ -38,12 +38,15 @@
 {#snippet newSaleModal({ close }: { close: () => void })}
   <div class="flex flex-col gap-5">
     <header class="flex items-start justify-between gap-3">
-      <h2 id="new-sale-modal-title" class="text-base font-semibold tracking-tight">
+      <h2
+        id="new-sale-modal-title"
+        class="text-base font-semibold tracking-tight dark:text-zinc-100"
+      >
         {mode === 'sales' ? 'Nueva venta' : 'Nueva deuda'}
       </h2>
       <button
         type="button"
-        class="grid h-9 w-9 place-content-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+        class="grid h-9 w-9 place-content-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
         aria-label="Cerrar"
         onclick={() => close()}>✕</button
       >
@@ -98,5 +101,3 @@
     children={newSaleModal}
   />
 {/if}
-
-<style></style>
