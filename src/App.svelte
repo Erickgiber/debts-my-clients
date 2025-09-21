@@ -273,10 +273,10 @@
   let loadingRate = $state(false);
   let rateError = $state<string | null>(null);
 
-  async function loadBolivarRate() {
+  async function loadBolivarRate(force = false) {
     loadingRate = true;
     rateError = null;
-    const r = await fetchBolivarRate();
+    const r = await fetchBolivarRate({ force });
     if (r) {
       bolivarRate = r.value;
       bolivarRateUpdatedAt = r.updatedAt;
@@ -290,17 +290,25 @@
   $effect(() => {
     if (!rateLoaded) {
       rateLoaded = true;
-      loadBolivarRate();
+      // Forzar la primera carga al abrir la app
+      loadBolivarRate(true);
+      // Actualizar automáticamente cada 1 hora
       rateInterval = window.setInterval(
         () => {
           loadBolivarRate();
         },
-        1000 * 60 * 60 * 4,
-      ); // 4 horas
+        1000 * 60 * 60,
+      );
+      // Refrescar cuando la pestaña/app vuelva a estar visible
+      const onVis = () => {
+        if (document.visibilityState === 'visible') loadBolivarRate();
+      };
+      document.addEventListener('visibilitychange', onVis);
+      return () => {
+        if (rateInterval) clearInterval(rateInterval);
+        document.removeEventListener('visibilitychange', onVis);
+      };
     }
-    return () => {
-      if (rateInterval) clearInterval(rateInterval);
-    };
   });
 </script>
 
@@ -342,7 +350,7 @@
       </span>
     {:else}
       <span>{rateError}</span>
-      <button type="button" class="underline" onclick={loadBolivarRate}>Reintentar</button>
+      <button type="button" class="underline" onclick={() => loadBolivarRate()}>Reintentar</button>
     {/if}
   </div>
 

@@ -145,15 +145,16 @@ export interface BolivarRateData {
 }
 
 const BOLIVAR_RATE_KEY = 'bolivar-rate-v1';
+const BOLIVAR_CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
 
-/** Load cached bolivar rate from localStorage if not older than 3 hours. */
+/** Load cached bolivar rate from localStorage if not older than TTL (1 hour). */
 function getCachedBolivarRateData(): BolivarRateData | null {
   try {
     const raw = localStorage.getItem(BOLIVAR_RATE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredRate;
     const ageMs = Date.now() - new Date(parsed.updatedAt).getTime();
-    if (ageMs > 1000 * 60 * 60 * 3) return null; // > 3h old
+    if (ageMs > BOLIVAR_CACHE_TTL_MS) return null; // expired
     if (typeof parsed.value === 'number' && parsed.value > 0)
       return { value: parsed.value, updatedAt: parsed.updatedAt };
     return null;
@@ -171,10 +172,20 @@ function cacheBolivarRate(value: number) {
   }
 }
 
-/** Fetch current official bolivar exchange rate (bolivares per USD). */
-export async function fetchBolivarRate(signal?: AbortSignal): Promise<BolivarRateData | null> {
-  const cached = getCachedBolivarRateData();
-  if (cached) return cached;
+/**
+ * Fetch current official bolivar exchange rate (bolivares per USD).
+ * By default returns a cached value if it is still fresh (<= 1h).
+ * Pass { force: true } to ignore cache and hit the API.
+ */
+export async function fetchBolivarRate(opts?: {
+  signal?: AbortSignal;
+  force?: boolean;
+}): Promise<BolivarRateData | null> {
+  const signal = opts?.signal;
+  if (!opts?.force) {
+    const cached = getCachedBolivarRateData();
+    if (cached) return cached;
+  }
   try {
     const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', { signal });
     if (!res.ok) throw new Error('Failed to fetch rate');
@@ -184,6 +195,17 @@ export async function fetchBolivarRate(signal?: AbortSignal): Promise<BolivarRat
     cacheBolivarRate(value);
     return { value, updatedAt: new Date().toISOString() };
   } catch {
+    // As a fallback, try returning cached (even if previously returned null due to TTL)
+    try {
+      const raw = localStorage.getItem(BOLIVAR_RATE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as StoredRate;
+        if (typeof parsed.value === 'number' && parsed.value > 0)
+          return { value: parsed.value, updatedAt: parsed.updatedAt };
+      }
+    } catch {
+      // ignore
+    }
     return null;
   }
 }
