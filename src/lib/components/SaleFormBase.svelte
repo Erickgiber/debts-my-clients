@@ -38,16 +38,17 @@
   // Clave de localStorage para preferencia de moneda
   const PREF_KEY = 'default-currency-v1';
 
-  // Cargar preferencia inicial al montar (siempre que no se haya modificado manualmente todavía)
-  // Carga diferida de preferencia (evita warnings de captura inicial)
+  // Cargar preferencia inicial sólo una vez por "sesión" de formulario.
+  // Antes corría en cada cambio cuando currency volvía a 'USD', impidiendo regresar de VES a USD.
+  let prefLoaded = false;
   $effect(() => {
+    if (prefLoaded) return; // ejecutar sólo una vez
     if (typeof window === 'undefined') return;
-    // Sólo ejecutar si aún está en USD inicial y no se cambió manualmente
-    if (form.currency !== 'USD') return;
     const stored = localStorage.getItem(PREF_KEY);
     if (stored === 'USD' || stored === 'VES') {
       form.currency = stored;
     }
+    prefLoaded = true;
   });
 
   // Efecto para validar selección de moneda y persistir preferencia
@@ -87,6 +88,8 @@
       notes: '',
       currency: 'USD',
     };
+    // Permitir que al reabrir el formulario se vuelva a aplicar la preferencia almacenada
+    prefLoaded = false;
   }
   export function hasUserInput(): boolean {
     if (form.debtorName.trim()) return true;

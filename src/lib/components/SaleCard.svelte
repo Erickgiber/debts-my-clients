@@ -506,7 +506,7 @@
             {#if !addingPayment}
               <button
                 type="button"
-                class="inline-flex w-full min-w-[110px] items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] sm:w-auto"
+                class="inline-flex w-full min-w-[110px] items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-500 active:scale-[.98] sm:w-auto dark:bg-blue-500 dark:hover:bg-blue-400"
                 onclick={startAddPayment}>Abonar</button
               >
             {:else}
@@ -515,12 +515,12 @@
                   type="number"
                   min="0.01"
                   step="0.01"
-                  class="w-full max-w-[120px] rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+                  class="w-full max-w-[120px] rounded-lg border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                   placeholder="$"
                   bind:value={partialAmount}
                 />
                 <select
-                  class="h-8 rounded-lg border border-zinc-300 bg-white px-1.5 text-[11px]"
+                  class="h-8 rounded-lg border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                   bind:value={partialCurrency}
                 >
                   <option value="USD">USD</option>
@@ -528,21 +528,21 @@
                 </select>
                 <button
                   type="button"
-                  class="h-8 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white hover:bg-emerald-500"
+                  class="h-8 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400"
                   onclick={confirmAddPayment}
                   disabled={!partialAmount ||
                     (partialCurrency === 'VES' && (!bolivarRate || bolivarRate <= 0))}>OK</button
                 >
                 <button
                   type="button"
-                  class="h-8 rounded-lg bg-zinc-200 px-3 text-xs font-medium hover:bg-zinc-300"
+                  class="h-8 rounded-lg bg-zinc-200 px-3 text-xs font-medium hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
                   onclick={cancelAddPayment}>✕</button
                 >
               </div>
             {/if}
             <button
               type="button"
-              class="inline-flex w-full min-w-[130px] items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98] sm:w-auto"
+              class="inline-flex w-full min-w-[130px] items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-500 active:scale-[.98] sm:w-auto dark:bg-emerald-500 dark:hover:bg-emerald-400"
               onclick={() => onMarkDelivered(sale.id)}>Marcar pagado</button
             >
           </div>
