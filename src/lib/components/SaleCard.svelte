@@ -798,12 +798,12 @@
   {#key sale.id + '-items-modal'}
     {#snippet itemsModal({ close }: { close: () => void })}
       <header class="mb-4 flex items-center justify-between">
-        <h2 id={`items-title-${sale.id}`} class="text-base font-semibold">
+        <h2 id={`items-title-${sale.id}`} class="text-base font-semibold dark:text-zinc-100">
           {mode === 'sales' ? 'Productos de la venta' : 'Productos de la deuda'}
         </h2>
         <button
           type="button"
-          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100"
+          class="grid h-9 w-9 place-content-center rounded-lg hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           aria-label="Cerrar"
           onclick={() => close()}>✕</button
         >
@@ -811,10 +811,32 @@
       <div class="max-h-[60vh] space-y-2 overflow-auto pr-2 text-sm">
         <ul class="space-y-1">
           {#each sale.items as it}
-            <li class="flex flex-col rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2">
-              <div class="flex justify-between gap-3">
-                <span class="text-zinc-700">{it.product} × {it.quantity}</span>
-                <span class="font-medium">{currency(it.unitPrice * it.quantity)}</span>
+            <li
+              class="flex flex-col rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/40"
+            >
+              <div class="flex flex-col gap-0.5">
+                <div class="flex justify-between gap-3">
+                  <span class="text-zinc-700 dark:text-zinc-200">{it.product} × {it.quantity}</span>
+                  {#if sale.currency === 'USD'}
+                    <span class="font-medium text-zinc-900 dark:text-zinc-100">
+                      {currency(it.unitPrice * it.quantity)}
+                      {#if bolivarRate}
+                        <span class="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400"
+                          >(Bs {(it.unitPrice * it.quantity * bolivarRate).toFixed(2)})</span
+                        >
+                      {/if}
+                    </span>
+                  {:else}
+                    <span class="font-medium text-zinc-900 dark:text-zinc-100">
+                      Bs {(it.unitPrice * it.quantity).toFixed(2)}
+                      {#if bolivarRate}
+                        <span class="ml-1 text-[10px] font-normal text-zinc-500 dark:text-zinc-400"
+                          >($ {((it.unitPrice * it.quantity) / bolivarRate).toFixed(2)})</span
+                        >
+                      {/if}
+                    </span>
+                  {/if}
+                </div>
               </div>
             </li>
           {/each}
@@ -823,7 +845,7 @@
       <div class="mt-4 flex justify-end">
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600"
           onclick={() => close()}>Cerrar</button
         >
       </div>
