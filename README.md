@@ -1,273 +1,126 @@
-## Sales / Debts Gestor
+# Deudas & Ventas (Sales / Debts Manager)
 
-La aplicación ahora soporta dos modos independientes: Ventas y Deudas.
+Aplicación **PWA** (instalable) para **gestionar ventas y deudas de clientes**, pensada para llevar control rápido desde el celular o escritorio, sin depender de servidor.
 
-- Cambia entre modos con el botón "Ventas" / "Deudas" en el encabezado.
-- Cada modo usa su propio almacenamiento local:
+## ¿Para qué sirve?
+
+- Registrar y administrar **ventas** (historial, montos, seguimiento).
+- Registrar y administrar **deudas** (quién debe, cuánto, control de pagos pendientes).
+- Usar la app como **gestor personal o de negocio**, con datos guardados localmente en el dispositivo.
+
+## Modos de la aplicación: Ventas y Deudas
+
+La app soporta **dos modos independientes**:
+
+- Cambias entre modos con el botón **"Ventas" / "Deudas"** en el encabezado.
+- **Cada modo guarda sus datos por separado** en el almacenamiento local del navegador:
   - Ventas: `sales-manager-state-v1`
   - Deudas: `debts-manager-state-v1`
-- El modo seleccionado se persiste en `app-mode-v1`.
-- Los textos de la UI (títulos, botones, formularios) se adaptan dinámicamente.
-- No se mezclan registros: puedes gestionar deudas personales sin afectar tu histórico de ventas.
+- El modo seleccionado se persiste en: `app-mode-v1`
+- La UI se adapta dinámicamente (títulos, botones y textos cambian según el modo).
+- **No se mezclan registros**: puedes gestionar deudas personales sin afectar el histórico de ventas.
 
-Limitaciones actuales:
-
-- El exportador PDF mantiene el título orientado a pagos pendientes (puedes ajustarlo si deseas una versión específica para deudas).
+### Limitación actual
+- El exportador **PDF** mantiene un título orientado a *pagos pendientes* (si quieres una versión específica para “Deudas”, se puede ajustar).
 
 ---
 
-## Android (Capacitor) build
-
-Requisitos previos:
-
-- Android Studio + SDK Platform 33+ (o la que Gradle pida)
-- Java 17 (JDK 17)
-
-Pasos rápidos:
-
-1. `npm run build`
-2. `npm run android:build`
-   - Genera `android/app/build/outputs/apk/release/app-release-unsigned.apk`
-3. Firma el APK para evitar advertencias al instalar:
-   - Crea un keystore si no tienes uno:
-     ```powershell
-     keytool -genkeypair -v -keystore yut.keystore -alias yut -keyalg RSA -keysize 2048 -validity 3650
-     ```
-   - Firma y alinea el APK:
-     ```powershell
-     # Firma (apksigner viene con el SDK de Android)
-     $env:PATH+=";${env:ANDROID_HOME}\build-tools\<version>"; apksigner sign --ks yut.keystore android\app\build\outputs\apk\release\app-release-unsigned.apk
-     # Verifica la firma
-     apksigner verify android\app\build\outputs\apk\release\app-release-unsigned.apk
-     ```
-   - Alternativa: usa Android Studio > Build > Generate Signed Bundle/APK.
-
-Notas para reducir “APK extraño”:
-
-- ID de app en formato Java sin guiones (por eso `com.salesgestor.ap`).
-- Tráfico claro deshabilitado (networkSecurityConfig) y `androidScheme` en https.
-- Firma de lanzamiento con keystore propio.
-
-# Deudas & Ventas
-
-App para gestionar deudas y ventas de clientes. Actualizada a Svelte 5 (runes).
-
-Principales cambios:
-
-- Reactividad con $state, $derived y $effect
-- Props con $props()
-- Eventos como callback props (onclick/onsubmit), sin createEventDispatcher
-
-Desarrollo
-
-- Requisitos: Node 18+
-- Scripts: `npm run dev`, `npm run build`, `npm run preview`
-
 ## PWA (Instalable en iOS, Android y Escritorio)
 
-La app incluye soporte PWA para instalación desde el navegador.
+La app incluye soporte **PWA** para instalarla desde el navegador.
 
-### Probar local
-
+### Probar localmente
 1. `npm run dev`
-2. Abre la URL local (ej: http://localhost:5173)
+2. Abre la URL local (ej: `http://localhost:5173`)
 3. DevTools > Application > Manifest debe mostrar datos válidos.
-4. Chrome/Edge: icono de instalar en omnibox.
-5. Safari iOS: Compartir > Agregar a pantalla de inicio.
+4. Chrome/Edge: icono de instalar en la barra.
+5. Safari iOS: Compartir > **Agregar a pantalla de inicio**.
 
 ### Archivos clave
-
 - `public/manifest.webmanifest`
 - `public/sw.js`
 - `index.html`
 - `src/main.ts`
 
 ### Consejos
-
 - Ya no es necesario cambiar manualmente `CACHE_NAME`; el Service Worker se versiona automáticamente.
-- Añade más tamaños de íconos si los necesitas (ej: 192, 256, 384, 512 maskable).
-- iOS no soporta `beforeinstallprompt`; proceso manual.
+- Agrega más tamaños de íconos si lo necesitas (ej: 192, 256, 384, 512 *maskable*).
+- iOS no soporta `beforeinstallprompt`; la instalación es manual.
 
-### Actualización automática forzada (Versionado SW)
+---
 
-Cada build genera un archivo `.env.production.local` (ignorando por git) con la variable `VITE_APP_VERSION` construida así:
+## Desarrollo
+
+- Requisitos: **Node 18+**
+- Scripts:
+  - `npm run dev`
+  - `npm run build`
+  - `npm run preview`
+
+La app está actualizada a **Svelte 5 (runes)**:
+- Reactividad con `$state`, `$derived`, `$effect`
+- Props con `$props()`
+- Eventos como callback props (`onclick/onsubmit`), sin `createEventDispatcher`
+
+---
+
+## Actualización automática forzada (Versionado del Service Worker)
+
+En cada build se genera `.env.production.local` (ignorado por git) con `VITE_APP_VERSION`:
 
 `<version-package.json>-<hash-git-corto>-<timestamp YYYYMMDDHHMMSS>`
 
-Ejemplo: `0.1.3-a1b2c3d-20250913174522`.
+Ejemplo: `0.1.3-a1b2c3d-20250913174522`
 
-El script `scripts/generate-version.mjs` se ejecuta automáticamente vía `npm run build` (hook `prebuild`). Si por alguna razón quieres regenerar manualmente solo la versión:
+- `scripts/generate-version.mjs` corre automáticamente en `npm run build` (hook `prebuild`).
+- El SW se registra como: `sw.js?v=<VITE_APP_VERSION>`
+- El `sw.js`:
+  - usa el parámetro `v` para crear un `CACHE_NAME` único
+  - borra caches antiguos en `activate`
+  - soporta `skipWaiting` y fuerza recarga cuando toma control
 
-```powershell
-node scripts/generate-version.mjs
-```
+Resultado: al desplegar una nueva versión, los usuarios reciben la actualización sin pasos manuales (cuando el SW se activa).
 
-La versión se añade como query param al registrar el Service Worker: `sw.js?v=<VITE_APP_VERSION>`.
+---
 
-El propio `sw.js`:
+## Android (Capacitor) build
 
-- Usa el parámetro `v` para crear un `CACHE_NAME` único (`ventas-cache-<versión>`).
-- Elimina caches antiguos durante `activate`.
-- Llama a `skipWaiting` (vía mensaje) y al tomar control dispara un `controllerchange` que fuerza `window.location.reload()` (en `src/main.ts`).
+### Requisitos previos
+- Android Studio + SDK Platform 33+ (o la que Gradle pida)
+- Java 17 (JDK 17)
 
-Resultado: al desplegar (nuevo commit + build) todos los clientes obtienen la nueva versión sin intervención del usuario en cuanto la pestaña se vuelve activa y el SW se actualiza.
+### Pasos rápidos
+1. `npm run build`
+2. `npm run android:build`  
+   - Genera: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+3. Firma el APK para evitar advertencias al instalar:
+   - Crear keystore (si no tienes):
+     ```powershell
+     keytool -genkeypair -v -keystore yut.keystore -alias yut -keyalg RSA -keysize 2048 -validity 3650
+     ```
+   - Firmar y verificar:
+     ```powershell
+     # Firma (apksigner viene con el SDK de Android)
+     $env:PATH+=";${env:ANDROID_HOME}\build-tools\<version>"; apksigner sign --ks yut.keystore android\app\build\outputs\apk\release\app-release-unsigned.apk
+     # Verifica la firma
+     apksigner verify android\app\build\outputs\apk\release\app-release-unsigned.apk
+     ```
+   - Alternativa: Android Studio > Build > Generate Signed Bundle/APK
 
-#### Flujo
+### Notas para reducir “APK extraño”
+- ID de app en formato Java sin guiones (ej: `com.salesgestor.ap`)
+- Tráfico claro deshabilitado (networkSecurityConfig) y `androidScheme` en https
+- Firma de lanzamiento con keystore propio
 
-1. Haces commit / push.
-2. Build genera nueva versión y despliegas.
-3. El navegador detecta hash nuevo (URL diferente del SW) y descarga el SW actualizado.
-4. Nuevo SW instala, limpia caches viejos, y se activa.
-5. La app recarga automáticamente con los assets frescos.
-6. Estrategia de navegación: `index.html` ahora es network-first (si hay conexión) para detectar builds nuevas inmediatamente y solo cae a cache si estás offline.
+---
 
-#### Notas
+## Versionado semántico automático (commit-msg + tags)
 
-- En desarrollo (`npm run dev`) se desregistran SW previos y se borran caches (`ventas-cache*`).
-- Si no hay git disponible (ej: build en CI shallow) se usa `nogit` como hash.
-- Puedes mostrar la versión dentro de la UI leyendo `import.meta.env.VITE_APP_VERSION`.
-
-Ejemplo para mostrar versión en un componente Svelte:
-
-```svelte
-<script>
-  const version = (import.meta as any).env.VITE_APP_VERSION;
-</script>
-
-<footer class="text-xs opacity-60">v {version}</footer>
-```
-
-### Versionado semántico automático (commit-msg + tags)
-
-El hook `commit-msg` aplica bump semántico, enmienda el commit y genera un tag `vX.Y.Z`.
-
-Herramienta: `scripts/semver-bump.mjs` + hook `.husky/commit-msg`.
+Hay un hook `commit-msg` que aplica bump semántico, enmienda el commit y crea un tag `vX.Y.Z`.
 
 Reglas:
+- `BREAKING CHANGE:` o `tipo!:` → **MAJOR**
+- `feat:` → **MINOR**
+- `fix:` / `perf:` / `release:` → **PATCH**
 
-- `BREAKING CHANGE:` en el cuerpo o `tipo!:` en el encabezado → bump MAJOR (x.0.0)
-- `feat:` / `feat(scope):` → bump MINOR (aumenta y resetea patch)
-- `fix:` / `perf:` / `release:` → bump PATCH
-- Otros tipos (`docs`, `chore`, `refactor`, etc.) no cambian versión (a menos que usen `!:`)
-
-Ejemplos:
-
-| Mensaje commit                        | Versión 1.2.3 → |
-| ------------------------------------- | --------------- |
-| `feat: agregar reporte PDF`           | 1.3.0           |
-| `fix(ui): corregir overflow`          | 1.2.4           |
-| `feat!: reescritura estructura datos` | 2.0.0           |
-| `refactor: limpiar utils`             | 1.2.3           |
-
-Notas:
-
-1. Usa `git commit -m "feat: ..."` para asegurar el bump; si abres editor igual funciona (lee el archivo del mensaje).
-2. Para forzar un bump manual:
-
-```powershell
-node scripts/semver-bump.mjs .git/COMMIT_EDITMSG --force minor
-```
-
-3. Se crea tag anotado `v<version>` si no existe; exporta `PUSH_TAG=1` para hacer `git push --follow-tags` automáticamente.
-
-Instalación Husky (ya configurado tras `npm install`):
-
-```powershell
-npm install
-```
-
-Hook: `.husky/commit-msg` → ejecuta el bump, enmienda y crea tag. Si el mensaje NO provoca bump (por ejemplo `refactor:`) el hook fuerza por defecto un bump `patch` usando `--force ${DEFAULT_BUMP:-patch}` para garantizar que cada commit en `main` avance la versión. Puedes sobrescribir exportando temporalmente `DEFAULT_BUMP=minor` o `DEFAULT_BUMP=major` antes del commit:
-
-```powershell
-$env:DEFAULT_BUMP="minor"; git commit -m "docs: actualizar readme"; Remove-Item Env:\DEFAULT_BUMP
-```
-
-Si quieres desactivar el force patch, edita `.husky/commit-msg` y elimina `--force ${DEFAULT_BUMP:-patch}`.
-
-Visualización de versión dentro de la app:
-
-Se añadió `src/lib/core/version.ts` que expone `APP_VERSION`.
-
-- En producción proviene de `VITE_APP_VERSION`.
-- En desarrollo intenta leer `package.json` (fetch) y añade sufijo `-dev`.
-
-`App.svelte` ahora muestra un badge discreto (abajo a la derecha) con `v<versión>` y se registra en `localStorage` la versión previa para comparar avisos de actualización.
-
-Si no deseas este comportamiento, elimina `.husky/commit-msg` y la dependencia `husky`, y borra el uso de `version.ts` y el badge en `App.svelte`.
-
-### Workflow GitHub: Auto bump en main
-
-Archivo existente: `.github/workflows/version-bump.yml`.
-
-Comportamiento actual del workflow incluido:
-
-- Solo hace bump si el mensaje del último commit contiene un tipo semántico (`feat`, `fix`, `perf`, `release`, `BREAKING CHANGE` o `tipo!:`). Si no detecta nada, no modifica la versión (a diferencia del hook local que fuerza `patch`).
-
-Esto te da dos capas:
-
-| Capa                  | Archivo                              | Estrategia                            | ¿Fuerza patch cuando no hay tipo? |
-| --------------------- | ------------------------------------ | ------------------------------------- | --------------------------------- |
-| Local (desarrollador) | `.husky/commit-msg`                  | Bump + amend + tag                    | Sí (patch por defecto)            |
-| CI (GitHub Actions)   | `.github/workflows/version-bump.yml` | Bump y tag solo si mensaje lo amerita | No                                |
-
-Ventajas de doble capa:
-
-- Evitas olvidarte de etiquetar versiones cuando commiteas localmente.
-- En CI no “ensucias” el historial con bumps innecesarios si decides hacer un commit sin tipo semántico y deseas realmente conservar la misma versión (puedes quitar el force local si cambias de política).
-
-Si quieres que CI también fuerce patch siempre, sustituye la sección "Determine bump type" del workflow por la lógica usada en el hook o adopta la versión alternativa (se dejó un ejemplo en comentario más abajo):
-
-```yaml
-# (Ejemplo alternativo resumido para forzar patch siempre)
-# - name: Determine bump type
-#   id: decide
-#   run: |
-#     MSG=$(git log -1 --pretty=%B | tr -d '\r')
-#     if echo "$MSG" | grep -qiE 'BREAKING CHANGE|!: '; then echo "type=major" >> $GITHUB_OUTPUT; exit 0; fi
-#     if echo "$MSG" | grep -qiE '^feat(\(|: )'; then echo "type=minor" >> $GITHUB_OUTPUT; exit 0; fi
-#     if echo "$MSG" | grep -qiE '^(fix|perf|release)(\(|: )'; then echo "type=patch" >> $GITHUB_OUTPUT; exit 0; fi
-#     echo "type=patch" >> $GITHUB_OUTPUT
-```
-
-Desactivar workflow: elimina el archivo o cambia la rama en `on.push.branches`.
-
-### Toast de actualización interactivo
-
-Cuando se activa un nuevo Service Worker:
-
-- Aparece un panel inferior con el mensaje: “Se ha detectado una nueva versión…”.
-- Botón “Actualizar ahora” fuerza `window.location.reload()`.
-- Botón “Más tarde” cierra el panel (seguirás con la versión vieja hasta recargar o nueva activación).
-
-Cambiar estilos: editar `src/lib/core/toast.ts` (clases Tailwind).
-
-### CHANGELOG automático
-
-Se genera/actualiza `CHANGELOG.md` automáticamente en cada bump de versión del workflow CI (`version-bump.yml`).
-
-Reglas de clasificación (convencional commits simplificado):
-
-- `feat:` → sección Features
-- `fix:` → sección Fixes
-- `perf:` → sección Performance
-- `BREAKING CHANGE:` en cuerpo o `tipo!:` en encabezado → sección BREAKING CHANGES
-- Otros tipos → sección Other
-
-Fuente: script `scripts/update-changelog.mjs`:
-
-Flujo:
-
-1. Obtiene el último tag (`git describe --tags --abbrev=0`).
-2. Lista commits desde ese tag hasta `HEAD`.
-3. Agrupa por tipo y genera una nueva sección `## <versión> - YYYY-MM-DD` al inicio del archivo.
-4. Si no hay cambios clasificados, añade `_No changes._`.
-
-Uso manual local (opcional):
-
-```powershell
-node scripts/update-changelog.mjs
-```
-
-Si deseas excluir ciertos tipos (ej. `chore:`) del bloque Other, podrías editar `classify()` en el script.
-
-Para futuras mejoras: enlazar cada bullet a la vista del commit en GitHub (`- desc (abcdef1)`).
+(Ver scripts en `scripts/` y hook `.husky/commit-msg`.)
